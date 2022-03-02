@@ -2,6 +2,7 @@ import numpy as np
 import gym
 from gym import spaces
 from stable_baselines3.common.env_checker import check_env
+import matplotlib.pyplot as plt
 
 TERMINAL_STATE = 0.
 MAX_STEPS = 50
@@ -26,12 +27,22 @@ class ToyEnv(gym.Env):
         # init step counter
         self.step_counter = 0
 
+        # plot
+        self.history_pos = [float(self.agent_pos)]
+        self.fig = plt.figure()
+        self.ax = self.fig.gca()
+
     def reset(self):
         # reset agent pos
         self.agent_pos = self.init_observation_space.sample()
 
         # reset step counter
         self.step_counter = 0
+
+        # plot
+        self.history_pos = [float(self.agent_pos)]
+        self.fig = plt.figure()
+        self.ax = self.fig.gca()
 
         return self.agent_pos # obs/state
 
@@ -56,13 +67,23 @@ class ToyEnv(gym.Env):
         # additional info
         info = {}
 
+        # record history poses
+        self.history_pos.append(float(self.agent_pos))
+        self.ax.plot(list(range(len(self.history_pos))), self.history_pos, c='black')
+
         return self.agent_pos.copy(), reward, done, info # obs/state, reward, done, info
 
     def render(self, mode='human'):
-        print("current obs:", float(np.round(self.agent_pos, 3)), end=" ")
+        # print("current obs:", float(np.round(self.agent_pos, 3)), end=" ")
+        if mode != 'human':
+            raise NotImplementedError
+
+        # plt.close('all')
+        plt.show()
 
     def close(self):
-        pass
+        self.fig.savefig('plots/zoo.png')
+        plt.close('all')
 
 if __name__ == '__main__':
     env = ToyEnv()

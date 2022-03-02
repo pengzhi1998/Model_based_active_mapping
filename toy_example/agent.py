@@ -4,7 +4,7 @@ from stable_baselines3 import DDPG
 from stable_baselines3.common.cmd_util import make_vec_env
 from stable_baselines3.common.noise import NormalActionNoise
 
-NUM_STEPS = 1e6
+NUM_STEPS = 1e5
 LOG_INTERVAL=50
 
 class OptAgent:
@@ -22,8 +22,8 @@ def make_ddpg_agent(env):
     action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
 
     # model
-    model = DDPG('MlpPolicy', env, action_noise=action_noise, buffer_size=200000, learning_starts=10000, gamma=0.98, policy_kwargs=dict(net_arch=[400, 300]), verbose=1) # 3
-    model = DDPG('MlpPolicy', env, action_noise=action_noise, gamma=1, verbose=1) # 2
+    model = DDPG('MlpPolicy', env, action_noise=action_noise, buffer_size=200000, learning_starts=10000, gamma=0.98, policy_kwargs=dict(net_arch=[400, 300]), verbose=1, tensorboard_log="./tensorboard/ddpg_toyenv_bounded/")
+    # model = DDPG('MlpPolicy', env, action_noise=action_noise, gamma=1, verbose=1, tensorboard_log="./tensorboard/ddpg_toyenv_bounded/")
 
     return model
 
@@ -36,5 +36,5 @@ if __name__ == '__main__':
 
     # train agent
     model = make_ddpg_agent(env)
-    model.learn(total_timesteps=NUM_STEPS, log_interval=LOG_INTERVAL)
-    model.save("checkpoints/ddpg_toyenv_bounded/default0")
+    model.learn(total_timesteps=NUM_STEPS, log_interval=LOG_INTERVAL, tb_log_name="zoo0-tb")
+    model.save("checkpoints/ddpg_toyenv_bounded/zoo0-tb")

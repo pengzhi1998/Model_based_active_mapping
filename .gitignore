@@ -1,5 +1,1 @@
-__pycache__
-ddpg_toyenv_bounded.zip
-ddpg_toyenv.zip
-checkpoints/Pendulum-v0-2.zip
-checkpoints/Pendulum-v0.zip
+toy_example/__pycache__

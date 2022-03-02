@@ -3,7 +3,7 @@ from toy_env import ToyEnv
 from agent import OptAgent
 import numpy as np
 
-NUM_TEST = 10
+NUM_TEST = 1
 
 def test_agent(agent):
     # get env
@@ -34,10 +34,11 @@ def test_agent(agent):
         m = np.mean(ratio)
         std = np.std(ratio)
         print(f"optimality  = [{m-std}, {m+std}]")
+        env.close()
 
 if __name__ == '__main__':
     # load model
-    model = DDPG.load('checkpoints/ddpg_toyenv_bounded/zoo2')
+    model = DDPG.load('checkpoints/ddpg_toyenv_bounded/zoo')
     # model = OptAgent()
 
     # test
