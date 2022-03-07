@@ -1,7 +1,7 @@
 import numpy as np
 from env import SimpleQuadrotor
 from stable_baselines3 import DDPG
-from stable_baselines3.common.cmd_util import make_vec_env
+from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.noise import NormalActionNoise
 
 NUM_STEPS = 1e5
