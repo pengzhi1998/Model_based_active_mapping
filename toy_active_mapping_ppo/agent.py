@@ -10,7 +10,7 @@ NUM_STEPS = 1e5
 LOG_INTERVAL=1
 
 def make_ppo_agent(env):
-    model = PPO('MlpPolicy', env, verbose=1,
+    model = PPO('MlpPolicy', env, verbose=1, n_steps=2048,
                 tensorboard_log=os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                              "tensorboard/ddpg_toy_active_mapping/")) # default
 

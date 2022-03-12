@@ -1,6 +1,6 @@
-from stable_baselines3 import DDPG
+from stable_baselines3 import PPO
 from env import SimpleQuadrotor
-import numpy as np
+import os
 
 NUM_TEST = 1
 
@@ -42,12 +42,14 @@ def test_agent(agent):
         # summary
         print("---")
         print(f"return = {total_reward}")
-        env.save_plot(name=f'plots/test_eps{eps}.png', title=f'return = {total_reward}')
+        env.save_plot(name=os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                             "plots/test_eps{}.png".format(eps)), title=f'return = {total_reward}')
     env.close()
 
 if __name__ == '__main__':
     # load model
-    model = DDPG.load('checkpoints/ddpg_toy_active_mapping/default')
+    model = PPO.load(os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                  "checkpoints/ddpg_toy_active_mapping/default"))
 
     # test
     test_agent(model)
