@@ -27,7 +27,7 @@ def test_agent(agent):
 
         while not done:
             # get action
-            action, _state = agent.predict(obs)
+            action, _state = agent.predict(obs, deterministic=True)
 
             # step env
             obs, r, done, info = env.step(action)
@@ -49,7 +49,7 @@ def test_agent(agent):
 if __name__ == '__main__':
     # load model
     model = PPO.load(os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                  "checkpoints/ddpg_toy_active_mapping/default"))
+                                  "checkpoints/ppo_toy_active_mapping/default"))
 
     # test
     test_agent(model)

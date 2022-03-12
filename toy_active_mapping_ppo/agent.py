@@ -10,9 +10,9 @@ NUM_STEPS = 1e5
 LOG_INTERVAL=1
 
 def make_ppo_agent(env):
-    model = PPO('MlpPolicy', env, verbose=1, n_steps=2048,
+    model = PPO('MlpPolicy', env, verbose=1, n_steps=2048, seed=0,
                 tensorboard_log=os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                             "tensorboard/ddpg_toy_active_mapping/")) # default
+                                             "tensorboard/ppo_toy_active_mapping/")) # default
 
     return model
 
@@ -26,4 +26,4 @@ if __name__ == '__main__':
     # train agent
     model = make_ppo_agent(env)
     model.learn(total_timesteps=NUM_STEPS, log_interval=LOG_INTERVAL, tb_log_name="default")
-    model.save(os.path.join(os.path.abspath(os.path.dirname(__file__)), "checkpoints/ddpg_toy_active_mapping/default"))
+    model.save(os.path.join(os.path.abspath(os.path.dirname(__file__)), "checkpoints/ppo_toy_active_mapping/default"))
