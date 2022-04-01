@@ -1,0 +1,11 @@
+**.idea
+**__pycache__
+**.pytest_cache
+**.pyc
+**.cache
+**build
+**bin
+**.egg-info
+**lib
+**.so
+**.a
