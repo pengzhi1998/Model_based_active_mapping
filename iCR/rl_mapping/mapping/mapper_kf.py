@@ -20,6 +20,7 @@ class KFMapper:
                                     origin=initial_map.origin)
 
     def update(self, state, obs):
+        print("obs:", obs, np.shape(obs), np.unique(obs[:, 2]))
         pose_px = xy_to_rc(state, self._map).astype(np.int)
         obs[:, :2] += pose_px[:2]
         free_coords = obs[np.nonzero(obs[:, 2] == Costmap.FREE)[0], :2]

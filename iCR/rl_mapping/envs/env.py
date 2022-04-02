@@ -2,6 +2,7 @@ import sys
 import os
 import math
 import gym
+import cv2
 import yaml
 import numpy as np
 import matplotlib.pyplot as plt
@@ -40,6 +41,7 @@ class VolumetricQuadrotor(gym.Env):
         self._angular_range = 2 * np.pi
 
     def step(self, action):
+        self.step_count += 1
         self.T_new[:, :] = SE2_motion(self.T_old[:, :], action, self._dt)
         for i in range(0, self.S.shape[0], self._downsample_coeff):
             for j in range(0, self.S.shape[1], self._downsample_coeff):
@@ -51,13 +53,36 @@ class VolumetricQuadrotor(gym.Env):
 
         self.T_old = self.T_new
 
-        return obs, r, done, info
+        self.reward_sum = np.sum(np.log(self.S[::self._downsample_coeff, ::self._downsample_coeff]))
+        if self.step_count == 0:
+            reward = self.reward_sum
+        else:
+            reward = self.reward_sum - self.reward_sum_old
+        self.reward_sum_old = self.reward_sum
+
+        if self.step_count >= 50:
+            done = True
+        else:
+            done = False
+
+        return obs, reward, done, {}
 
     def reset(self):
-        self.T_old = state_to_T(init_state)
+        occ_map = (self.distrib_map.data[:, :, 0] == 0) * 255
+        img = cv2.threshold(occ_map.astype(np.uint8), 127, 255, cv2.THRESH_BINARY)[1]
+        num_labels, labels = cv2.connectedComponents(img)
+        biggest_region_label = stats.mode(labels[labels > 0], axis=None)[0]
+        center_px = np.floor(np.mean(np.nonzero(labels == biggest_region_label), axis=1))
+
+        center = rc_to_xy(center_px, self.distrib_map)
+        self.init_state[2] = np.arctan2(center[1] - self.init_state[1], center[0] - state[0])
+
+        self.T_old = state_to_T(self.init_state)
         self.T_new = np.zeros((3, 3))
 
         self.S = self.distrib_map.data[:, :, 1].copy()
+
+        self.step_count = 0
         return obs
 
     def render(self, mode='human'):
@@ -66,6 +91,10 @@ class VolumetricQuadrotor(gym.Env):
 
     def close (self):
         pass
+
+    def initial_inputs(self, distrib_map, initial_state):
+        self.distrib_map = distrib_map
+        self.init_state = initial_state
 
 if __name__ == '__main__':
     env = VolumetricQuadrotor()
