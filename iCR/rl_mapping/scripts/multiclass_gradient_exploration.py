@@ -15,7 +15,6 @@ from rl_mapping.sensors.semantic_sensors import SemanticLidar
 from rl_mapping.envs.semantic_grid_world import SemanticGridWorld
 from rl_mapping.mapping.mapper_kf import KFMapper
 from rl_mapping.utilities.utils import visualize, visualize_traj, visualize_info
-from rl_mapping.envs.env import VolumetricQuadrotor
 
 # os.chdir(cur_path)
 print(os.path.abspath("."))

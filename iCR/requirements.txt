@@ -1,4 +1,7 @@
+gym
 numpy
 scipy
 matplotlib
 opencv-python
+stable-baselines3==1.4.0
+tensorboard
