@@ -22,7 +22,7 @@ from bc_exploration.utilities.util import rc_to_xy
 from bc_exploration.footprints.footprints import CustomFootprint
 from bc_exploration.footprints.footprint_points import get_tricky_circular_footprint, get_tricky_oval_footprint
 
-from rl_mapping.utilities.utils import state_to_T, T_to_state, SE2_motion, triangle_SDF, Gaussian_CDF
+from rl_mapping.utilities.utils import state_to_T, T_to_state, SE2_motion, triangle_SDF, Gaussian_CDF, circle_SDF
 from rl_mapping.sensors.semantic_sensors import SemanticLidar
 from rl_mapping.envs.semantic_grid_world import SemanticGridWorld
 from rl_mapping.mapping.mapper_kf import KFMapper
@@ -30,7 +30,6 @@ from rl_mapping.mapping.mapper_kf import KFMapper
 CONTROL = 2.
 DOWNSAMPLE = 25
 SENSOR_RANGE = 1.5
-ANGULAR_RANGE = np.pi*2
 STD = 0.01
 
 class VolumetricQuadrotor(gym.Env):
@@ -60,6 +59,7 @@ class VolumetricQuadrotor(gym.Env):
         # init
         self.info_vec = self.distrib_map.data[:, :, 1].copy() # (h, w)
         self.agent_pos = np.zeros(3, dtype=np.float32) # (3, )
+        self.last_r = np.sum(np.log(self.info_vec[::DOWNSAMPLE, ::DOWNSAMPLE]))
         self.current_step = -1
 
     def __load_params(self, params_filename: str):
@@ -87,12 +87,14 @@ class VolumetricQuadrotor(gym.Env):
             for j in range(0, self.info_vec.shape[1], DOWNSAMPLE):
                 p_ij = rc_to_xy(np.array([i, j]), self.distrib_map)
                 q = T_old[:2, :2].transpose() @ (p_ij - T_old[:2, 2])
-                d, _ = triangle_SDF(q, ANGULAR_RANGE / 2, SENSOR_RANGE)
+                d, _ = circle_SDF(q, SENSOR_RANGE)
                 Phi, _ = Gaussian_CDF(d, self.kappa)
                 self.info_vec[i, j] += 1 / (STD**2) * (1 - Phi)
 
         # calculate reward
-        r = np.sum(np.log(self.info_vec[::DOWNSAMPLE, ::DOWNSAMPLE]))
+        cur_r = np.sum(np.log(self.info_vec[::DOWNSAMPLE, ::DOWNSAMPLE]))
+        r = cur_r - self.last_r
+        self.last_r = cur_r
 
         # obs
         obs = np.hstack([
@@ -114,6 +116,7 @@ class VolumetricQuadrotor(gym.Env):
         # init
         self.info_vec = self.distrib_map.data[:, :, 1].copy() # (h, w)
         self.agent_pos = np.zeros(3, dtype=np.float32) # (3, )
+        self.last_r = np.sum(np.log(self.info_vec[::DOWNSAMPLE, ::DOWNSAMPLE]))
         self.current_step = -1
 
         # construct observation
@@ -158,7 +161,7 @@ if __name__ == '__main__':
                             angular_resolution=params['footprint']['angular_resolution'],
                             inflation_scale=params['footprint']['inflation_scale'])
     sensor = SemanticLidar(sensor_range=SENSOR_RANGE,
-                           angular_range=ANGULAR_RANGE,
+                           angular_range=np.pi*2,
                            angular_resolution=0.5 * np.pi / 180,
                            map_resolution=0.03,
                            num_classes=1,
@@ -186,8 +189,6 @@ if __name__ == '__main__':
     obs = env.reset()
     done = False
     total_reward = 0
-
-    print("state shape:", obs.shape)
 
     while not done:
         action = env.action_space.sample()

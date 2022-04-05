@@ -272,12 +272,14 @@ def triangle_SDF(q, psi, r):
         SDF, Grad = np.linalg.norm(q - q_2), (q - q_2) / np.linalg.norm(q - q_2)
     return SDF, Grad
 
+def circle_SDF(q, r):
+    SDF, Grad = np.linalg.norm(q) ** 2 - r ** 2, 2 * q
+    return SDF, Grad
 
 def Gaussian_CDF(x, kap):
     Psi = (1 + erf(x / (np.sqrt(2) * kap) - 2)) / 2
     Psi_der = 1 / (np.sqrt(2 * np.pi) * kap) * np.exp(- (x / (np.sqrt(2) * kap) - 2) ** 2)
     return Psi, Psi_der
-
 
 def visualize_FOV(kappa, psi, r, res):
     x = np.linspace(-3, 6, res)
@@ -322,6 +324,36 @@ def visualize_FOV(kappa, psi, r, res):
     # _, thresh = cv2.threshold(contour_map, 97, 255, 0)
     # contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     # cv2.drawContours(vis_map, contours, -1, color=(0, 255, 0), thickness=1, lineType=cv2.LINE_AA)
+
+    cv2.imwrite('FOV_surface2.png', vis_map)
+
+def visualize_FOV_circle(kappa, r, res):
+    x = np.linspace(-3, 6, res)
+    y = np.linspace(-4, 4, res)
+    FOV_surface = np.zeros((res, res, 3))
+    for k, kap in enumerate([kappa / 100, kappa, kappa * 2]):
+        for i in range(res):
+            for j in range(res):
+                q = np.array([x[i], y[j]])
+                FOV_surface[i, j, k] = 1 - Gaussian_CDF(circle_SDF(q, r)[0], kap)[0]
+
+    vis_map = cv2.cvtColor((FOV_surface[:, :, 1] * 255).astype(np.uint8), cv2.COLOR_GRAY2RGB)
+    vis_map = cv2.applyColorMap(vis_map, cv2.COLORMAP_HOT)
+
+    contour_map = (FOV_surface[:, :, 2] * 255).astype(np.uint8)
+    _, thresh = cv2.threshold(contour_map, 250, 255, 0)
+    contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    cv2.drawContours(vis_map, contours, -1, color=(255, 0, 0), thickness=1, lineType=cv2.LINE_AA)
+
+    contour_map = (FOV_surface[:, :, 1] * 255).astype(np.uint8)
+    _, thresh = cv2.threshold(contour_map, 250, 255, 0)
+    contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    cv2.drawContours(vis_map, contours, -1, color=(0, 255, 0), thickness=1, lineType=cv2.LINE_AA)
+
+    contour_map = (FOV_surface[:, :, 0] * 255).astype(np.uint8)
+    _, thresh = cv2.threshold(contour_map, 250, 255, 0)
+    contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    cv2.drawContours(vis_map, contours, -1, color=(255, 255, 0), thickness=1, lineType=cv2.LINE_AA)
 
     cv2.imwrite('FOV_surface2.png', vis_map)
 
