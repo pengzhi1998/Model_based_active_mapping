@@ -66,14 +66,21 @@ class VolumetricQuadrotor(gym.Env):
         T_new = SE2_motion(T_old, control, self.dt)
         self.agent_pos = T_to_state(T_new)
 
+        ## update information: vectorized
+        # downsample indices
+        idx_mat = np.indices(self.info_vec.shape)[:, ::self.downsample_rate, ::self.downsample_rate] # (2, h / downsample_rate, w / downsample_rate) = (2, h', w')
+        idx     = idx_mat.reshape((2, -1)).T # (h' x w', 2) = (N, 2)
+        # convert row, column to x, y
+        p_ij = rc_to_xy(idx, self.distrib_map) # (N, 2)
+        # operate poses
+        q = T_old[:2, :2].transpose() @ (p_ij - T_old[:2, 2]).T # (2, N)
+        # SDF
+        d, _ = circle_SDF(q, self.sensor_range) # (N, )
+        # gaussian
+        Phi, _ = Gaussian_CDF(d, self.kappa) # (N, )
+        Phi = Phi.reshape((idx_mat.shape[1:])) # (h', w')
         # update information
-        for i in range(0, self.info_vec.shape[0], self.downsample_rate):
-            for j in range(0, self.info_vec.shape[1], self.downsample_rate):
-                p_ij = rc_to_xy(np.array([i, j]), self.distrib_map)
-                q = T_old[:2, :2].transpose() @ (p_ij - T_old[:2, 2])
-                d, _ = circle_SDF(q, self.sensor_range)
-                Phi, _ = Gaussian_CDF(d, self.kappa)
-                self.info_vec[i, j] += 1 / (self.std**2) * (1 - Phi)
+        self.info_vec[::self.downsample_rate, ::self.downsample_rate] += 1 / (self.std**2) * (1 - Phi)
 
         # calculate reward
         cur_r = np.sum(np.log(self.info_vec[::self.downsample_rate, ::self.downsample_rate]))
@@ -112,8 +119,7 @@ class VolumetricQuadrotor(gym.Env):
         return obs
 
     def render(self, mode='human'):
-
-        raise NotImplementedError
+        pass
 
     def close (self):
         pass

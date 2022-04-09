@@ -273,7 +273,10 @@ def triangle_SDF(q, psi, r):
     return SDF, Grad
 
 def circle_SDF(q, r):
-    SDF, Grad = np.linalg.norm(q) ** 2 - r ** 2, 2 * q
+    if q.ndim in {1, 2}:
+        SDF, Grad = np.linalg.norm(q, axis=0) ** 2 - r ** 2, 2 * q
+    else:
+        raise NotImplementedError
     return SDF, Grad
 
 def Gaussian_CDF(x, kap):
