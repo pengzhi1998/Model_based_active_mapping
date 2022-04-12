@@ -35,10 +35,12 @@ class VolumetricQuadrotor(gym.Env):
         ## distribution map
         self.__load_distrib_map(map_filename)
 
-        ## observation space: agent position + diagonal entries of the information matrix (i.e. the information vector)
-        # [x, y, info_vec_0, info_vec_1, ...]
+        ## observation space: diagonal entries of the information matrix (i.e. the information vector) + agent position
         h, w, _ = self.distrib_map.get_shape()
-        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(2 + h * w, ), dtype=np.float32)
+        self.observation_space = spaces.Dict({
+            'info': spaces.Box(low=-np.inf, high=np.inf, shape=(1, h, w), dtype=np.float32),
+            'pose': spaces.Box(low=-np.inf, high=np.inf, shape=(2, ), dtype=np.float32)
+        })
 
         ## action space: linearly controlling the x, y velocities, yaw angle is fixed as 0
         # (x, y): {-control_scale, control_scale}^2
@@ -88,10 +90,10 @@ class VolumetricQuadrotor(gym.Env):
         self.last_r = cur_r
 
         # obs
-        obs = np.hstack([
-            self.agent_pos[:2],
-            self.info_vec.flatten()
-        ]).astype(np.float32)
+        obs = {
+            'info': self.info_vec.astype(np.float32)[np.newaxis, :, :],
+            'pose': self.agent_pos[:2]
+        }
 
         done = False
         if self.current_step >= self.total_step-1:
@@ -111,10 +113,10 @@ class VolumetricQuadrotor(gym.Env):
         self.current_step = -1
 
         # construct observation
-        obs = np.hstack([
-            self.agent_pos[:2],
-            self.info_vec.flatten()
-        ]).astype(np.float32)
+        obs = {
+            'info': self.info_vec.astype(np.float32)[np.newaxis, :, :],
+            'pose': self.agent_pos[:2]
+        }
 
         return obs
 
