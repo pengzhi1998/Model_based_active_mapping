@@ -3,12 +3,12 @@ footprint:
   angular_resolution: 0.01745
   inflation_scale: 1.0
 
-horizon: 100
+horizon: 10
 dt: 1
 kappa: 0.5
 
-downsample_rate: 25
-sensor_range: 1.5
+downsample_rate: 1 # 25
+sensor_range: 3
 
-control_scale: 2.0
+control_scale: 1.0 # 2.0
 std: 0.01

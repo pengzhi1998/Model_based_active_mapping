@@ -37,9 +37,11 @@ class VolumetricQuadrotor(gym.Env):
 
         ## observation space: diagonal entries of the information matrix (i.e. the information vector) + agent position
         h, w, _ = self.distrib_map.get_shape()
+        self.xmax, self.ymax, _ = self.distrib_map.get_size()
+        self.ox, self.oy = self.distrib_map.origin
         self.observation_space = spaces.Dict({
             'info': spaces.Box(low=-np.inf, high=np.inf, shape=(1, h, w), dtype=np.float32),
-            'pose': spaces.Box(low=-np.inf, high=np.inf, shape=(2, ), dtype=np.float32)
+            'pose': spaces.Box(low=np.array([self.ox, self.oy]), high=np.array([self.xmax + self.ox, self.ymax + self.oy]), dtype=np.float32)
         })
 
         ## action space: linearly controlling the x, y velocities, yaw angle is fixed as 0
@@ -49,7 +51,7 @@ class VolumetricQuadrotor(gym.Env):
 
         ## init
         self.info_vec = self.distrib_map.data[:, :, 1].copy() # (h, w)
-        self.agent_pos = np.zeros(3, dtype=np.float32) # (3, )
+        self.agent_pos = np.array([self.ox + self.xmax/2, self.oy + self.ymax/2, 0.], dtype=np.float32) # (3, )
         self.last_r = np.sum(np.log(self.info_vec[::self.downsample_rate, ::self.downsample_rate]))
         self.current_step = -1
 
@@ -67,6 +69,9 @@ class VolumetricQuadrotor(gym.Env):
         T_old = state_to_T(self.agent_pos)
         T_new = SE2_motion(T_old, control, self.dt)
         self.agent_pos = T_to_state(T_new)
+
+        # boundary enforce
+        self.agent_pos[:2] = np.clip(self.agent_pos[:2], [self.ox, self.oy], [self.xmax + self.ox, self.ymax + self.oy])
 
         ## update information: vectorized
         # downsample indices
@@ -108,7 +113,7 @@ class VolumetricQuadrotor(gym.Env):
 
         # init
         self.info_vec = self.distrib_map.data[:, :, 1].copy() # (h, w)
-        self.agent_pos = np.zeros(3, dtype=np.float32) # (3, )
+        self.agent_pos = np.array([self.ox + self.xmax/2, self.oy + self.ymax/2, 0.], dtype=np.float32) # (3, )
         self.last_r = np.sum(np.log(self.info_vec[::self.downsample_rate, ::self.downsample_rate]))
         self.current_step = -1
 
@@ -181,7 +186,7 @@ class VolumetricQuadrotor(gym.Env):
                                 sensor=sensor,
                                 num_class=1,
                                 footprint=footprint,
-                                start_state=None,
+                                start_state=[0., 0., 0.],
                                 no_collision=True)
         padding = 0.
         map_shape = np.array(env.get_map_shape()) + int(2. * padding // 0.03)

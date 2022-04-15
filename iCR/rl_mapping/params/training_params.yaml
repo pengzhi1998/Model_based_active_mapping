@@ -1,0 +1,22 @@
+# experiment
+exp_name: "default"
+
+# paths
+env_params_filepath: "../params/env_params.yaml"
+map_filepath: "../maps/map6_converted.png"
+
+# training
+num_envs: 1
+num_steps: 10000
+buffer_size: 1024
+gamma: 0.99
+
+# log
+log_interval: 10
+
+# checkpoints
+save_frequency: 1000 # in steps
+checkpoints_folder: "./checkpoints/ddpg-cnn/"
+
+# tensorboard
+tensorboard_folder: "./tensorboard/ddpg-cnn/"

@@ -1,7 +1,7 @@
 from stable_baselines3 import DDPG
 
-import os
-import sys
+import os, sys
+import yaml
 
 cur_path = os.path.abspath(os.path.dirname(__file__))
 print(cur_path)
@@ -12,16 +12,25 @@ from rl_mapping.envs.env import VolumetricQuadrotor
 
 NUM_TEST = 1
 
-def test_agent(env: VolumetricQuadrotor, agent):
+def test(params_filepath: str):
+    ### read parameters ###
+    with open(os.path.join(params_filepath)) as f:
+            params = yaml.load(f, Loader=yaml.FullLoader)
 
-    # get parameters
+    ### create env ###
+    env = VolumetricQuadrotor(params['map_filepath'], params['env_params_filepath'])
+
+    ### load model ###
+    agent = DDPG.load(os.path.join(params['checkpoints_folder'], params['exp_name'], params['exp_name']), device='cpu')
+
+    ### get parameters ###
     try:
         gamma = float(agent.gamma)
     except:
         gamma = 1.
     print(f"gamma = {gamma}")
 
-    # test
+    ### test ###
     for eps in range(NUM_TEST):
 
         obs = env.reset()
@@ -29,7 +38,7 @@ def test_agent(env: VolumetricQuadrotor, agent):
         total_reward = 0
 
         print(f"\n------ Eps {eps} ------")
-        print(f"init pose = {obs[:2]}")
+        print(f"init pose = {obs['pose']}")
 
         while not done:
             # get action
@@ -37,6 +46,7 @@ def test_agent(env: VolumetricQuadrotor, agent):
 
             # step env
             obs, r, done, info = env.step(action)
+            print("obs =", obs['pose'])
 
             # calc return
             total_reward += r * (gamma ** env.current_step)
@@ -51,15 +61,6 @@ def test_agent(env: VolumetricQuadrotor, agent):
     env.close()
 
 if __name__ == '__main__':
-    # create env
-    params_filename = '../params/env_params.yaml'
-    map_filename = '../maps/map6_converted.png'
-    env = VolumetricQuadrotor(map_filename, params_filename)
-
-    # load model
-    model = DDPG.load('checkpoints/ddpg/zoo', device='cpu')
-
-    # test
-    test_agent(env, model)
+    test("../params/training_params.yaml")
 
         
