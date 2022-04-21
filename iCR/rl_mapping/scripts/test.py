@@ -1,4 +1,4 @@
-from stable_baselines3 import DDPG
+from stable_baselines3 import DDPG, PPO
 
 import os, sys
 import yaml
@@ -12,16 +12,23 @@ from rl_mapping.envs.env import VolumetricQuadrotor
 
 NUM_TEST = 1
 
-def test(params_filepath: str):
+def test(params_filepath: str, ckpt_name: str=""):
     ### read parameters ###
-    with open(os.path.join(params_filepath)) as f:
+    with open(os.path.join(os.path.abspath("."), params_filepath)) as f:
             params = yaml.load(f, Loader=yaml.FullLoader)
 
     ### create env ###
     env = VolumetricQuadrotor(params['map_filepath'], params['env_params_filepath'])
 
     ### load model ###
-    agent = DDPG.load(os.path.join(params['checkpoints_folder'], params['exp_name'], params['exp_name']), device='cpu')
+    if ckpt_name == "":
+        ckpt_name = params['exp_name']
+    if params['algorithm'] == 'PPO':
+        agent = PPO.load(os.path.join(params['checkpoints_folder'], params['exp_name'], ckpt_name), device='cpu')
+    elif params['algorithm'] == 'DDPG':
+        agent = DDPG.load(os.path.join(params['checkpoints_folder'], params['exp_name'], ckpt_name), device='cpu')
+    else:
+        raise NotImplementedError
 
     ### get parameters ###
     try:
@@ -43,6 +50,7 @@ def test(params_filepath: str):
         while not done:
             # get action
             action, _state = agent.predict(obs)
+            print("action =", action)
 
             # step env
             obs, r, done, info = env.step(action)
@@ -53,14 +61,15 @@ def test(params_filepath: str):
 
             # render
             env.render(mode='human')
-            print(f"reward = {r}")
+            print(f"reward = {r}\n")
 
         # summary
         print("---")
-        print(f"return = {total_reward}")
+        print(f"return = {total_reward}\n")
     env.close()
 
 if __name__ == '__main__':
-    test("../params/training_params.yaml")
+    test("checkpoints/ppo-cnn/example/training_params.yaml")
+    # test("checkpoints/ppo-cnn/example/training_params.yaml", "example_6000_steps.zip")
 
         

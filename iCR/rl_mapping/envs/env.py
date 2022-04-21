@@ -1,6 +1,7 @@
 import os
 import sys
 import yaml
+import cv2
 import numpy as np
 
 import gym
@@ -18,7 +19,7 @@ from bc_exploration.utilities.util import rc_to_xy
 from bc_exploration.footprints.footprints import CustomFootprint
 from bc_exploration.footprints.footprint_points import get_tricky_circular_footprint, get_tricky_oval_footprint
 
-from rl_mapping.utilities.utils import state_to_T, T_to_state, SE2_motion, Gaussian_CDF, circle_SDF
+from rl_mapping.utilities.utils import state_to_T, T_to_state, SE2_motion, Gaussian_CDF, circle_SDF, visualize
 from rl_mapping.sensors.semantic_sensors import SemanticLidar
 from rl_mapping.envs.semantic_grid_world import SemanticGridWorld
 from rl_mapping.mapping.mapper_kf import KFMapper
@@ -58,20 +59,25 @@ class VolumetricQuadrotor(gym.Env):
     def step(self, action):
         self.current_step += 1
 
-        # rescale actions
+        ## rescale actions
         action *= self.control_scale
         control = np.hstack([
             action, 
             0
         ]).astype(np.float32)
 
-        # apply dynamics and update agent's pos
+        ## apply dynamics and update agent's pos
         T_old = state_to_T(self.agent_pos)
         T_new = SE2_motion(T_old, control, self.dt)
         self.agent_pos = T_to_state(T_new)
 
-        # boundary enforce
-        self.agent_pos[:2] = np.clip(self.agent_pos[:2], [self.ox, self.oy], [self.xmax + self.ox, self.ymax + self.oy])
+        ## boundary enforce
+        bounded_pos = np.clip(self.agent_pos[:2], [self.ox, self.oy], [self.xmax + self.ox, self.ymax + self.oy])
+        if not np.isclose(self.agent_pos[:2], bounded_pos).all():
+            dist_outside = np.linalg.norm(self.agent_pos[:2] - bounded_pos)
+        else:
+            dist_outside = 0
+        self.agent_pos[:2] = bounded_pos
 
         ## update information: vectorized
         # downsample indices
@@ -89,9 +95,15 @@ class VolumetricQuadrotor(gym.Env):
         # update information
         self.info_vec[::self.downsample_rate, ::self.downsample_rate] += 1 / (self.std**2) * (1 - Phi)
 
-        # calculate reward
+        ## calculate reward
         cur_r = np.sum(np.log(self.info_vec[::self.downsample_rate, ::self.downsample_rate]))
-        r = cur_r - self.last_r
+        # log of reward diff + boundary penalty
+        if self.is_log:
+            r_diff = np.log(cur_r - self.last_r)
+        else:
+            r_diff = cur_r - self.last_r
+        r = r_diff - np.abs(dist_outside / self.control_scale) * self.boundary_penalty_coef
+        # update recorded last reward
         self.last_r = cur_r
 
         # obs
@@ -126,13 +138,18 @@ class VolumetricQuadrotor(gym.Env):
         return obs
 
     def render(self, mode='human'):
-        pass
+        # get obs
+        pose, obs = self.__grid_env.step(self.agent_pos)
+        # get occupancy map
+        occ_map = self.mapper.update(state=pose, obs=obs)
+        # visulization
+        visualize(state=pose, semantic_map=occ_map, num_class=1, render_size=(np.array(self.__grid_env.get_map_shape()[::-1])).astype(int), wait_key=0, save_file=None)
 
     def close (self):
-        pass
+        cv2.destroyAllWindows()
 
     def __load_params(self, params_filename: str):
-        with open(os.path.join(params_filename)) as f:
+        with open(os.path.join(os.path.abspath("."), params_filename)) as f:
             params = yaml.load(f, Loader=yaml.FullLoader)
 
         # information
@@ -155,6 +172,9 @@ class VolumetricQuadrotor(gym.Env):
             pass
         self.footprint_angular_resolution = params['footprint']['angular_resolution']
         self.footprint_inflation_scale = params['footprint']['inflation_scale']
+        # reward
+        self.is_log = params['is_log']
+        self.boundary_penalty_coef = params['boundary_penalty_coef']
 
     def __load_distrib_map(self, map_filename: str):
 
@@ -181,7 +201,7 @@ class VolumetricQuadrotor(gym.Env):
                             map_resolution=0.03,
                             num_classes=1,
                             aerial_view=True)
-        env = SemanticGridWorld(map_filename=map_filename,
+        self.__grid_env = SemanticGridWorld(map_filename=map_filename,
                                 map_resolution=0.03,
                                 sensor=sensor,
                                 num_class=1,
@@ -189,14 +209,14 @@ class VolumetricQuadrotor(gym.Env):
                                 start_state=[0., 0., 0.],
                                 no_collision=True)
         padding = 0.
-        map_shape = np.array(env.get_map_shape()) + int(2. * padding // 0.03)
+        map_shape = np.array(self.__grid_env.get_map_shape()) + int(2. * padding // 0.03)
         initial_map = Costmap(data=Costmap.UNEXPLORED * np.ones(map_shape, dtype=np.uint8),
-                            resolution=env.get_map_resolution(),
-                            origin=[-padding - env.start_state[0], -padding - env.start_state[1]])
+                            resolution=self.__grid_env.get_map_resolution(),
+                            origin=[-padding - self.__grid_env.start_state[0], -padding - self.__grid_env.start_state[1]])
 
-        mapper = KFMapper(initial_map=initial_map, sigma2=self.std**2)
+        self.mapper = KFMapper(initial_map=initial_map, sigma2=self.std**2)
 
-        self.distrib_map = mapper.get_distrib_map()
+        self.distrib_map = self.mapper.get_distrib_map()
 
 
 if __name__ == '__main__':
@@ -219,7 +239,9 @@ if __name__ == '__main__':
         total_reward += r
 
         print("reward: ", r)
+        env.render()
 
+    print("---")
     print("return:", total_reward)
 
     env.close()

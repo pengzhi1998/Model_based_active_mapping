@@ -3,7 +3,7 @@ footprint:
   angular_resolution: 0.01745
   inflation_scale: 1.0
 
-horizon: 10
+horizon: 30 # 10
 dt: 1
 kappa: 0.5
 
@@ -12,3 +12,7 @@ sensor_range: 3
 
 control_scale: 1.0 # 2.0
 std: 0.01
+
+# reward calculation
+is_log: True
+boundary_penalty_coef: 5
