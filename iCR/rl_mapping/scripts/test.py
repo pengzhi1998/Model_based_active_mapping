@@ -18,7 +18,8 @@ def test(params_filepath: str, ckpt_name: str=""):
             params = yaml.load(f, Loader=yaml.FullLoader)
 
     ### create env ###
-    env = VolumetricQuadrotor(params['map_filepath'], params['env_params_filepath'])
+    env_params_filepath = os.path.join(os.path.split(params_filepath)[0], os.path.split(params['env_params_filepath'])[1])
+    env = VolumetricQuadrotor(params['map_filepath'], env_params_filepath)
 
     ### load model ###
     if ckpt_name == "":
@@ -69,7 +70,7 @@ def test(params_filepath: str, ckpt_name: str=""):
     env.close()
 
 if __name__ == '__main__':
-    test("checkpoints/ppo-cnn/example/training_params.yaml")
-    # test("checkpoints/ppo-cnn/example/training_params.yaml", "example_6000_steps.zip")
+    # test("checkpoints/ppo/no_bound/training_params.yaml")
+    test("checkpoints/ppo/no_bound/training_params.yaml", "no_bound_800000_steps.zip")
 
         
