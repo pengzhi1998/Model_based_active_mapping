@@ -1,8 +1,11 @@
 from stable_baselines3 import PPO
 from env import SimpleQuadrotor
 import os
-
+import numpy as np
 NUM_TEST = 1
+
+ACTION = np.array([[4, 3, 0], [0, -2, 0],
+    [-4, -5, 0], [-2, -1, 0], [-1, 4, 0], [0, 4, 0]])/5
 
 def test_agent(agent):
     # get env
@@ -25,9 +28,12 @@ def test_agent(agent):
         print(f"\n------ Eps {eps} ------")
         print(f"init state = {obs}")
 
+        t = 0
         while not done:
             # get action
             action, _state = agent.predict(obs, deterministic=True)
+            # action = ACTION[t]
+            t += 1
 
             # step env
             obs, r, done, info = env.step(action)

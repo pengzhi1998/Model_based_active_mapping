@@ -91,7 +91,7 @@ def Gaussian_CDF(x, kap):
 def diff_FoV_land(x,y,n_y,r,kap,std):
     V_jj_inv = np.zeros((2 * n_y, 2 * n_y)) 
     for j in range(n_y):
-        q = x[:2] - y[j * 2: j * 2 + 2]
+        q = x[:2] - y[j * 2: j * 2 + 2].T
         SDF, Grad = circle_SDF(q,r)
         Phi, Phi_der =  Gaussian_CDF(SDF, kap)
         V_jj_inv[2 * j, 2 * j] = 1 / (std ** 2) * (1 - Phi)

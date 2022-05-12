@@ -6,7 +6,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-NUM_STEPS = 1e5
+NUM_STEPS = 1e6
 LOG_INTERVAL=1
 
 def make_ppo_agent(env):

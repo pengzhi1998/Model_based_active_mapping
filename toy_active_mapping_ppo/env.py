@@ -13,8 +13,9 @@ from utils import unicycle_dyn, diff_FoV_land
 
 # env setting
 STATE_DIM = 3
-LANDMARK_NUM = 2
-RADIUS = 0.2
+# LANDMARK_NUM = 2
+LANDMARK_NUM = 5
+RADIUS = .5
 STD = 0.5
 KAPPA = 0.2
 
@@ -42,8 +43,12 @@ class SimpleQuadrotor(gym.Env):
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(STATE_DIM + LANDMARK_NUM*2, ), dtype=np.float32) # (x, y, \theta, info_mat_0, info_mat_1, info_mat_2, info_mat_3): {-inf, inf}^7
 
         # landmark init
-        self.landmark = np.array([[1], [1], [-1], [-1]], dtype=np.float32)
-        self.info_mat = np.diag([1, 1, 2, 2]).astype(np.float32)
+        # self.landmark = np.array([[1], [1], [-1], [-1]], dtype=np.float32)
+        # self.info_mat = np.diag([1, 1, 2, 2]).astype(np.float32)
+        self.landmark = np.array([[4], [3], [0], [-4], [-2], [-5], [4], [1], [-3], [3]], dtype=np.float32)
+        # self.info_mat = np.diag([1, 1, 2, 2, 3, 3, 4, 4, 5, 5]).astype(np.float32)
+        # self.info_mat = np.diag([1, 1, 2, 2, 1, 1, 2, 2, 1, 1]).astype(np.float32)
+        self.info_mat = np.diag([.5, .5, .5, .5, .5, .5, .5, .5, .5, .5]).astype(np.float32)
 
         # agent pose init
         self.agent_pos = np.zeros(STATE_DIM, dtype=np.float32)
@@ -67,7 +72,7 @@ class SimpleQuadrotor(gym.Env):
         self.current_step += 1
 
         # rescale actions
-        action *= 2
+        action *= 10
 
         # record history action
         self.history_actions.append(action.copy())
@@ -108,8 +113,12 @@ class SimpleQuadrotor(gym.Env):
 
     def reset(self):
         # landmark init
-        self.landmark = np.array([[1], [1], [-1], [-1]], dtype=np.float32)
-        self.info_mat = np.diag([1, 1, 2, 2]).astype(np.float32)
+        # self.landmark = np.array([[1], [1], [-1], [-1]], dtype=np.float32)
+        # self.info_mat = np.diag([1, 1, 2, 2]).astype(np.float32)
+        self.landmark = np.array([[4], [3], [0], [-4], [-2], [-5], [4], [1], [-3], [3]], dtype=np.float32)
+        # self.info_mat = np.diag([1, 1, 2, 2, 3, 3, 4, 4, 5, 5]).astype(np.float32)
+        # self.info_mat = np.diag([1, 1, 2, 2, 1, 1, 2, 2, 1, 1]).astype(np.float32)
+        self.info_mat = np.diag([.5, .5, .5, .5, .5, .5, .5, .5, .5, .5]).astype(np.float32)
 
         # agent pose init
         self.agent_pos = np.zeros(STATE_DIM, dtype=np.float32)
@@ -142,7 +151,8 @@ class SimpleQuadrotor(gym.Env):
         self.ax.scatter(history_poses[-1, 0], history_poses[-1, 1], marker='s', s=15, c='red', label="end")
 
         # plot landmarks
-        self.ax.scatter(self.landmark[[0, 2], :], self.landmark[[1, 3], :], s=10, c='blue', label="landmark")
+        # self.ax.scatter(self.landmark[[0, 2], :], self.landmark[[1, 3], :], s=10, c='blue', label="landmark")
+        self.ax.scatter(self.landmark[[0, 2, 4, 6, 8], :], self.landmark[[1, 3, 5, 7, 9], :], s=10, c='blue', label="landmark")
 
         # annotate theta value to each position point
         for i in range(0, len(self.history_poses)-1):
