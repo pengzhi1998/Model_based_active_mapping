@@ -55,7 +55,7 @@ def test_agent(agent):
 if __name__ == '__main__':
     # load model
     model = PPO.load(os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                  "checkpoints/ppo_toy_active_mapping/default"))
+                                  "checkpoints/ppo_toy_active_mapping/default.zip"))
 
     # test
     test_agent(model)

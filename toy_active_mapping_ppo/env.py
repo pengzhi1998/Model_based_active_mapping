@@ -17,7 +17,7 @@ STATE_DIM = 3
 LANDMARK_NUM = 5
 RADIUS = .5
 STD = 0.5
-KAPPA = 0.2
+KAPPA = 0.2  # TODO: increase
 
 # time & step
 TOTAL_TIME = 5
