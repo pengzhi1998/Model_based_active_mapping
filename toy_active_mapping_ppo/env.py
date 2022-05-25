@@ -1,14 +1,12 @@
 import math
 import numpy as np
-from numpy.linalg import slogdet
-
 import gym
-from gym import spaces
-
-from stable_baselines3.common.env_checker import check_env
-
+import random
 import matplotlib.pyplot as plt
 
+from numpy.linalg import slogdet
+from gym import spaces
+from stable_baselines3.common.env_checker import check_env
 from utils import unicycle_dyn, diff_FoV_land
 
 # env setting
@@ -17,11 +15,13 @@ STATE_DIM = 3
 LANDMARK_NUM = 5
 RADIUS = .5
 STD = 0.5
-KAPPA = 0.2  # TODO: increase
+KAPPA = 1  # TODO: increase
 
 # time & step
-TOTAL_TIME = 5
+TOTAL_TIME = 15
 STEP_SIZE = 1
+
+random.seed(100)
 
 class SimpleQuadrotor(gym.Env):
     metadata = {'render.modes': ['human', 'terminal']}
@@ -42,12 +42,8 @@ class SimpleQuadrotor(gym.Env):
         # agent state + diag of info mat
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(STATE_DIM + LANDMARK_NUM*2, ), dtype=np.float32) # (x, y, \theta, info_mat_0, info_mat_1, info_mat_2, info_mat_3): {-inf, inf}^7
 
-        # landmark init
-        # self.landmark = np.array([[1], [1], [-1], [-1]], dtype=np.float32)
-        # self.info_mat = np.diag([1, 1, 2, 2]).astype(np.float32)
+        # landmark and info_mat init
         self.landmark = np.array([[4], [3], [0], [-4], [-2], [-5], [4], [1], [-3], [3]], dtype=np.float32)
-        # self.info_mat = np.diag([1, 1, 2, 2, 3, 3, 4, 4, 5, 5]).astype(np.float32)
-        # self.info_mat = np.diag([1, 1, 2, 2, 1, 1, 2, 2, 1, 1]).astype(np.float32)
         self.info_mat = np.diag([.5, .5, .5, .5, .5, .5, .5, .5, .5, .5]).astype(np.float32)
 
         # agent pose init
@@ -72,7 +68,7 @@ class SimpleQuadrotor(gym.Env):
         self.current_step += 1
 
         # rescale actions
-        action *= 10
+        action *= 3
 
         # record history action
         self.history_actions.append(action.copy())
@@ -121,7 +117,9 @@ class SimpleQuadrotor(gym.Env):
         self.info_mat = np.diag([.5, .5, .5, .5, .5, .5, .5, .5, .5, .5]).astype(np.float32)
 
         # agent pose init
-        self.agent_pos = np.zeros(STATE_DIM, dtype=np.float32)
+        # self.agent_pos = np.zeros(STATE_DIM, dtype=np.float32)
+        self.agent_pos = np.array([random.uniform(-2, 2), random.uniform(-3, 3), 0])
+        # self.agent_pos = np.array([-3, 3, 0])
 
         # state init
         self.state = np.hstack([

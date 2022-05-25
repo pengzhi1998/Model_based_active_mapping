@@ -8,8 +8,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import CheckpointCallback
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-NUM_STEPS = 1e6
-# NUM_STEPS = 212990
+NUM_STEPS = 3e5
 LOG_INTERVAL = 1
 parser = argparse.ArgumentParser(description='landmark-based mapping')
 parser.add_argument('--learning-curve-path', default="tensorboard/ppo_toy_active_mapping/")
