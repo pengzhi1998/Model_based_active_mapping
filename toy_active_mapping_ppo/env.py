@@ -25,11 +25,12 @@ np.random.seed(100)
 class SimpleQuadrotor(gym.Env):
     metadata = {'render.modes': ['human', 'terminal']}
 
-    def __init__(self, num_landmarks, test=None):
+    def __init__(self, num_landmarks, landmarks, test=False):
         super(SimpleQuadrotor, self).__init__()
 
         # variables
         self.num_landmarks = num_landmarks
+        self.test = test
         self.total_time = TOTAL_TIME
         self.step_size = STEP_SIZE
         self.total_step = math.floor(TOTAL_TIME / STEP_SIZE)
@@ -43,10 +44,10 @@ class SimpleQuadrotor(gym.Env):
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(STATE_DIM + self.num_landmarks*2, ), dtype=np.float32) # (x, y, \theta, info_mat_0, info_mat_1, info_mat_2, info_mat_3): {-inf, inf}^7
 
         # landmark and info_mat init
-        if test == None:
-            self.landmark = np.random.uniform(low=-10, high=10.0, size=(self.num_landmarks * 2, 1))
+        if self.test == False:
+            self.landmarks = landmarks
         else:
-            self.landmark = np.array([[ 0.86809884],
+            self.landmarks = np.array([[ 0.86809884],
        [-4.4326123 ],
        [-1.50964819],
        [ 6.89552265],
@@ -77,7 +78,7 @@ class SimpleQuadrotor(gym.Env):
        [ 5.91325017],
        [-9.69490058]])
         self.info_mat_init = np.diag([.5] * self.num_landmarks * 2).astype(np.float32)
-        print("landmarks' positions:", [self.landmark])
+        print("landmarks' positions:", [self.landmarks])
 
     def step(self, action):
         self.current_step += 1
@@ -95,7 +96,7 @@ class SimpleQuadrotor(gym.Env):
         next_agent_pos = unicycle_dyn(self.agent_pos, action, self.step_size).astype(np.float32)
 
         # reward
-        V_jj_inv = diff_FoV_land(next_agent_pos, self.landmark, self.num_landmarks, RADIUS, KAPPA, STD).astype(np.float32) # diff_FoV
+        V_jj_inv = diff_FoV_land(next_agent_pos, self.landmarks, self.num_landmarks, RADIUS, KAPPA, STD).astype(np.float32) # diff_FoV
         next_info_mat = self.info_mat + V_jj_inv # update info
         reward = float(slogdet(next_info_mat)[1] - slogdet(self.info_mat)[1])
 
@@ -143,8 +144,9 @@ class SimpleQuadrotor(gym.Env):
         # plot
         self.history_poses = [self.agent_pos]
         self.history_actions = []
-        self.fig = plt.figure(1)
-        self.ax = self.fig.gca()
+        if self.test == True:
+            self.fig = plt.figure(1)
+            self.ax = self.fig.gca()
 
         return self.state
 
@@ -159,9 +161,8 @@ class SimpleQuadrotor(gym.Env):
         self.ax.scatter(history_poses[-1, 0], history_poses[-1, 1], marker='s', s=15, c='red', label="end")
 
         # plot landmarks
-        # self.ax.scatter(self.landmark[[0, 2], :], self.landmark[[1, 3], :], s=10, c='blue', label="landmark")
-        self.ax.scatter(self.landmark[list(range(0, self.num_landmarks*2, 2)), :],
-                        self.landmark[list(range(1, self.num_landmarks*2+1, 2)), :], s=10, c='blue', label="landmark")
+        self.ax.scatter(self.landmarks[list(range(0, self.num_landmarks*2, 2)), :],
+                        self.landmarks[list(range(1, self.num_landmarks*2+1, 2)), :], s=10, c='blue', label="landmark")
 
         # annotate theta value to each position point
         for i in range(0, len(self.history_poses)-1):

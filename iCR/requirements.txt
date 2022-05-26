@@ -5,3 +5,4 @@ matplotlib
 opencv-python
 stable-baselines3==1.4.0
 tensorboard
+protobuf~=3.19.0
