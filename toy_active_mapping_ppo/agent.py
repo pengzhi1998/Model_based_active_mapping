@@ -6,7 +6,7 @@ import numpy as np
 from env import SimpleQuadrotor
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.callbacks import CheckpointCallback
+from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 NUM_STEPS = 1e6
@@ -36,8 +36,10 @@ if __name__ == '__main__':
 
     # train agent
     model = make_ppo_agent(env)
-    checkpoint_callback = CheckpointCallback(save_freq=100000, save_path=args.model_path)
+    checkpoint_callback = CheckpointCallback(save_freq=10000, save_path=os.path.join(os.path.abspath(os.path.dirname(__file__)), args.model_path))
+    evaluation_callback = EvalCallback(env, n_eval_episodes=20, eval_freq=10000,
+        best_model_save_path=os.path.join(os.path.abspath(os.path.dirname(__file__)), args.model_path))
 
-    model.learn(total_timesteps=NUM_STEPS,log_interval=LOG_INTERVAL, tb_log_name="default", callback=checkpoint_callback)
+    model.learn(total_timesteps=NUM_STEPS,log_interval=LOG_INTERVAL, tb_log_name="default", callback=evaluation_callback)
     model.save(os.path.join(os.path.abspath(os.path.dirname(__file__)), args.model_path))
-    print([landmark])
+    print([landmarks])
