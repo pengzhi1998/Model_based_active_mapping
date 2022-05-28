@@ -9,7 +9,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-NUM_STEPS = 1e6
+NUM_STEPS = 1.5e6
 LOG_INTERVAL = 1
 parser = argparse.ArgumentParser(description='landmark-based mapping')
 parser.add_argument('--num-landmarks', type=int, default=15)
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     # train agent
     model = make_ppo_agent(env)
     checkpoint_callback = CheckpointCallback(save_freq=10000, save_path=os.path.join(os.path.abspath(os.path.dirname(__file__)), args.model_path))
-    evaluation_callback = EvalCallback(env, n_eval_episodes=20, eval_freq=10000,
+    evaluation_callback = EvalCallback(env, n_eval_episodes=20, eval_freq=10240,
         best_model_save_path=os.path.join(os.path.abspath(os.path.dirname(__file__)), args.model_path))
 
     model.learn(total_timesteps=NUM_STEPS,log_interval=LOG_INTERVAL, tb_log_name="default", callback=evaluation_callback)
