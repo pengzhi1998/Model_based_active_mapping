@@ -129,8 +129,8 @@ class SimpleQuadrotor(gym.Env):
 
         # agent pose init
         # self.agent_pos = np.zeros(STATE_DIM, dtype=np.float32)
-        self.agent_pos = np.array([random.uniform(-2, 2), random.uniform(-3, 3), 0])
-        # self.agent_pos = np.array([-3, 3, 0])
+        self.agent_pos = np.array([random.uniform(-2, 2), random.uniform(-2, 2), 0])
+        # self.agent_pos = np.array([0, 0, 0])
 
         # state init
         self.state = np.hstack([

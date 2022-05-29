@@ -9,7 +9,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-NUM_STEPS = 1.5e6
+NUM_STEPS = 5e5
 LOG_INTERVAL = 1
 parser = argparse.ArgumentParser(description='landmark-based mapping')
 parser.add_argument('--num-landmarks', type=int, default=15)
@@ -23,6 +23,8 @@ def make_ppo_agent(env):
     model = PPO('MlpPolicy', env, verbose=1, n_steps=2048, seed=0, policy_kwargs=policy_kwargs,
                 tensorboard_log=os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                              args.learning_curve_path))  # default
+    # model = PPO.load(os.path.join(os.path.abspath(os.path.dirname(__file__)),
+    #                               "checkpoints/ppo_toy_active_mapping/default/best_model.zip"), env)
 
     return model
 

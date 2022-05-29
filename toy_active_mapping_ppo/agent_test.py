@@ -5,7 +5,7 @@ import numpy as np
 from stable_baselines3 import PPO
 from env import SimpleQuadrotor
 
-NUM_TEST = 1
+NUM_TEST = 10
 
 ACTION = np.array([[4, 3, 0], [0, -2, 0],
     [-4, -5, 0], [-2, -1, 0], [-1, 4, 0], [0, 4, 0]])/5
@@ -49,7 +49,7 @@ def test_agent(agent):
             obs, r, done, info = env.step(action)
 
             # calc return
-            total_reward += r * (gamma ** env.current_step)
+            total_reward += r
 
             # render
             env.render(mode='human')
