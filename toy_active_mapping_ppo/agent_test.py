@@ -29,6 +29,7 @@ def test_agent(agent):
     print(f"gamma = {gamma}")
 
     # test
+    reward_list = []
     for eps in range(NUM_TEST):
 
         obs = env.reset()
@@ -53,14 +54,15 @@ def test_agent(agent):
 
             # render
             env.render(mode='human')
-            print(f"reward = {r}")
 
         # summary
         print("---")
         print(f"return = {total_reward}")
+        reward_list.append(total_reward)
         env.save_plot(name=os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                              "plots/test_eps{}.png".format(eps)), title=f'return = {total_reward}')
     env.close()
+    print(f"mean and std of total return = {np.mean(reward_list), np.std(reward_list)}")
 
 if __name__ == '__main__':
     # load model
