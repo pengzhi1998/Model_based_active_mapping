@@ -32,7 +32,16 @@ def make_ppo_agent(env):
 
 if __name__ == '__main__':
     # init env
-    landmarks = np.random.uniform(low=-args.bound, high=args.bound, size=(args.num_landmarks * 2, 1))
+    if args.num_landmarks < 20:
+        landmarks = np.random.uniform(low=-args.bound, high=args.bound, size=(args.num_landmarks * 2, 1))
+    else:
+        if args.num_landmarks == 25:
+            landmarks = np.concatenate(
+                (np.reshape(np.random.uniform(low=[-12., -2.], high=[-8., 2.], size=(args.num_landmarks//5, 2)), [10, 1]),
+                 np.reshape(np.random.uniform(low=[-2., 8.], high=[2., 12.], size=(args.num_landmarks//5, 2)), [10, 1]),
+                 np.reshape(np.random.uniform(low=[8., -2.], high=[12., 2.], size=(args.num_landmarks//5, 2)), [10, 1]),
+                 np.reshape(np.random.uniform(low=[-2., -12.], high=[2., -8.], size=(args.num_landmarks//5, 2)), [10, 1]),
+                 np.reshape(np.random.uniform(low=[-2., -2.], high=[2., 2.], size=(args.num_landmarks//5, 2)), [10, 1])), 0)
     env = SimpleQuadrotor(args.num_landmarks, args.horizon, landmarks, False)
 
     # wrap with vector env
