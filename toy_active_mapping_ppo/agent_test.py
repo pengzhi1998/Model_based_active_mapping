@@ -12,14 +12,16 @@ ACTION = np.array([[4, 3, 0], [0, -2, 0],
 
 parser = argparse.ArgumentParser(description='landmark-based mapping')
 parser.add_argument('--num-landmarks', type=int, default=15)
+parser.add_argument('--horizon', type=int, default=45)
+parser.add_argument('--bound', type=int, default=10)
 parser.add_argument('--learning-curve-path', default="tensorboard/ppo_toy_active_mapping/")
 parser.add_argument('--model-path', default="checkpoints/ppo_toy_active_mapping/default")
 args = parser.parse_args()
 
 def test_agent(agent):
     # get env
-    landmarks = np.random.uniform(low=-10, high=10.0, size=(args.num_landmarks * 2, 1))
-    env = SimpleQuadrotor(args.num_landmarks, landmarks, True)
+    landmarks = np.random.uniform(low=-args.bound, high=args.bound, size=(args.num_landmarks * 2, 1))
+    env = SimpleQuadrotor(args.num_landmarks, args.horizon, landmarks, True)
 
     # get parameters
     try:

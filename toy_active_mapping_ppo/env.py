@@ -16,7 +16,6 @@ STD = 0.5
 KAPPA = 1  # TODO: increase
 
 # time & step
-TOTAL_TIME = 50
 STEP_SIZE = 1
 
 random.seed(100)
@@ -25,15 +24,15 @@ np.random.seed(100)
 class SimpleQuadrotor(gym.Env):
     metadata = {'render.modes': ['human', 'terminal']}
 
-    def __init__(self, num_landmarks, landmarks, test=False):
+    def __init__(self, num_landmarks, horizon, landmarks, test=False):
         super(SimpleQuadrotor, self).__init__()
 
         # variables
         self.num_landmarks = num_landmarks
         self.test = test
-        self.total_time = TOTAL_TIME
+        self.total_time = horizon
         self.step_size = STEP_SIZE
-        self.total_step = math.floor(TOTAL_TIME / STEP_SIZE)
+        self.total_step = math.floor(self.total_time / STEP_SIZE)
 
         # action space
         # defined as {-1, 1} as suggested by stable_baslines3, rescaled to {-2, 2} later in step()

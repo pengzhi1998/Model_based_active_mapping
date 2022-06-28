@@ -1,8 +1,0 @@
-gym
-matplotlib
-numpy
-pip=22.0.3
-python=3.8.12=hf930737_2_cpython
-scipy=1.8.0
-stable-baselines3=1.4.0
-tensorboard

@@ -9,10 +9,12 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-NUM_STEPS = 5e5
+NUM_STEPS = 1e6
 LOG_INTERVAL = 1
 parser = argparse.ArgumentParser(description='landmark-based mapping')
 parser.add_argument('--num-landmarks', type=int, default=15)
+parser.add_argument('--horizon', type=int, default=45)
+parser.add_argument('--bound', type=int, default=10)
 parser.add_argument('--learning-curve-path', default="tensorboard/ppo_toy_active_mapping/")
 parser.add_argument('--model-path', default="checkpoints/ppo_toy_active_mapping/default")
 args = parser.parse_args()
@@ -30,8 +32,8 @@ def make_ppo_agent(env):
 
 if __name__ == '__main__':
     # init env
-    landmarks = np.random.uniform(low=-10, high=10.0, size=(args.num_landmarks * 2, 1))
-    env = SimpleQuadrotor(args.num_landmarks, landmarks, False)
+    landmarks = np.random.uniform(low=-args.bound, high=args.bound, size=(args.num_landmarks * 2, 1))
+    env = SimpleQuadrotor(args.num_landmarks, args.horizon, landmarks, False)
 
     # wrap with vector env
     env = make_vec_env(lambda: env, n_envs=1)
