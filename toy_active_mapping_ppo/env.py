@@ -134,33 +134,35 @@ class SimpleQuadrotor(gym.Env):
 
         return self.state
 
-    def _plot(self, title='trajectory'):
+    def _plot(self, legend, title='trajectory'):
 
         # plot agent trajectory
+        plt.tick_params(labelsize=11)
         history_poses = np.array(self.history_poses)
-        self.ax.plot(history_poses[:, 0], history_poses[:, 1], c='black', label='agent trajectory')
+        self.ax.plot(history_poses[:, 0], history_poses[:, 1], c='black', linewidth=2, label='agent trajectory')
 
         # plot agent trajectory start & end
-        self.ax.scatter(history_poses[0, 0], history_poses[0, 1], marker='>', s=15, c='red', label="start")
-        self.ax.scatter(history_poses[-1, 0], history_poses[-1, 1], marker='s', s=15, c='red', label="end")
+        self.ax.scatter(history_poses[0, 0], history_poses[0, 1], marker='>', s=50, c='red', label="start")
+        self.ax.scatter(history_poses[-1, 0], history_poses[-1, 1], marker='s', s=50, c='red', label="end")
 
         # plot landmarks
         self.ax.scatter(self.landmarks[list(range(0, self.num_landmarks*2, 2)), :],
-                        self.landmarks[list(range(1, self.num_landmarks*2+1, 2)), :], s=10, c='blue', label="landmark")
+                        self.landmarks[list(range(1, self.num_landmarks*2+1, 2)), :], s=50, c='blue', label="landmark")
 
         # annotate theta value to each position point
-        for i in range(0, len(self.history_poses)-1):
-            self.ax.annotate(round(self.history_actions[i][2], 4), history_poses[i, :2])
+        # for i in range(0, len(self.history_poses)-1):
+        #     self.ax.annotate(round(self.history_actions[i][2], 4), history_poses[i, :2])
 
         # axes
-        self.ax.set_xlabel("x")
-        self.ax.set_ylabel("y")
+        self.ax.set_xlabel("x", fontdict={'size': 16})
+        self.ax.set_ylabel("y", fontdict={'size': 16})
 
         # title
-        self.ax.set_title(title)
+        self.ax.set_title(title, fontdict={'size': 16})
 
         # legend
-        self.ax.legend()
+        if legend == True:
+            self.ax.legend()
 
     def render(self, mode='human'):
         if mode == 'terminal':
@@ -173,7 +175,7 @@ class SimpleQuadrotor(gym.Env):
             self.ax.cla()
 
             # plot
-            self._plot()
+            self._plot(True)
 
             # display
             plt.draw()
@@ -182,9 +184,9 @@ class SimpleQuadrotor(gym.Env):
         else:
             raise NotImplementedError
 
-    def save_plot(self, name='default.png', title='trajectory'):
+    def save_plot(self, name='default.png', title='trajectory', legend=False):
         self.ax.cla()
-        self._plot(title=title)
+        self._plot(legend, title=title)
         self.fig.savefig(name)
 
     def close (self):

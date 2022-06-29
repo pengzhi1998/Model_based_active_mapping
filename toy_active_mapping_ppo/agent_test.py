@@ -5,7 +5,7 @@ import numpy as np
 from stable_baselines3 import PPO
 from env import SimpleQuadrotor
 
-NUM_TEST = 10
+NUM_TEST = 4
 
 ACTION = np.array([[4, 3, 0], [0, -2, 0],
     [-4, -5, 0], [-2, -1, 0], [-1, 4, 0], [0, 4, 0]])/5
@@ -43,6 +43,15 @@ def test_agent(agent):
 
         t = 0
         while not done:
+            if t == 0 or t == args.horizon/3 - 1 or t == args.horizon*2/3 - 1:
+                total_reward_ = format(total_reward, '.2f')
+                if t == 0:
+                    env.save_plot(name=os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                                "plots/test_landmarknum{}_eps{}_step{}.png".format(args.num_landmarks, eps, t)), title=f'return = {total_reward}', legend=True)
+                else:
+                    env.save_plot(name=os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                                    "plots/test_landmarknum{}_eps{}_step{}.png".format(args.num_landmarks, eps, t)), title=f'return = {total_reward_}')
+
             # get action
             action, _state = agent.predict(obs, deterministic=True)
             # action = ACTION[t]
@@ -61,8 +70,9 @@ def test_agent(agent):
         print("---")
         print(f"return = {total_reward}")
         reward_list.append(total_reward)
+        total_reward_ = format(total_reward, '.2f')
         env.save_plot(name=os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                             "plots/test_eps{}.png".format(eps)), title=f'return = {total_reward}')
+                                             "plots/test_eps{}.png".format(eps)), title=f'return = {total_reward_}')
     env.close()
     print(f"mean and std of total return = {np.mean(reward_list), np.std(reward_list)}")
 
