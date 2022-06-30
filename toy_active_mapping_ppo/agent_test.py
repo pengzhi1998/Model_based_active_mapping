@@ -72,7 +72,7 @@ def test_agent(agent):
         reward_list.append(total_reward)
         total_reward_ = format(total_reward, '.2f')
         env.save_plot(name=os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                             "plots/test_eps{}.png".format(eps)), title=f'return = {total_reward_}')
+                                             "plots/test_landmarknum{}_eps{}_step{}.png".format(args.num_landmarks, eps, t)), title=f'return = {total_reward_}')
     env.close()
     print(f"mean and std of total return = {np.mean(reward_list), np.std(reward_list)}")
 

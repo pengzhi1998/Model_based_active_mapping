@@ -40,7 +40,7 @@ class SimpleQuadrotor(gym.Env):
         
         # state space
         # agent state + diag of info mat
-        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(STATE_DIM + self.num_landmarks*2, ), dtype=np.float32) # (x, y, \theta, info_mat_0, info_mat_1, info_mat_2, info_mat_3): {-inf, inf}^7
+        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(STATE_DIM - 1 + self.num_landmarks*4, ), dtype=np.float32) # (x, y, \theta, info_mat_0, info_mat_1, info_mat_2, info_mat_3): {-inf, inf}^7
 
         # landmark and info_mat init
         if self.test == False:
@@ -79,8 +79,19 @@ class SimpleQuadrotor(gym.Env):
         # dynamics
         next_agent_pos = unicycle_dyn(self.agent_pos, action, self.step_size).astype(np.float32)
 
+        # update the estimated landmarks' positions
+        for i in range(self.num_landmarks):
+            if np.linalg.norm(next_agent_pos[0:2] - self.landmarks[i*2: i*2+2].flatten()) < RADIUS:
+                sensor_value = self.landmarks[i*2: i*2+2].flatten() + np.random.normal(0, STD, [2,])
+                info_sensor = np.array([[self.info_mat[i*2,i*2], 0], [0, self.info_mat[i*2+1,i*2+1]]])
+                kalman_gain = info_sensor @ np.linalg.inv(info_sensor + STD**2*np.identity(2))
+                landmarks_estimate = self.landmarks_estimate[i*2: i*2+2].flatten() + \
+                                              np.diagonal(kalman_gain * (sensor_value - self.landmarks_estimate[i*2: i*2+2].flatten()))  # no dynamics for the landmarks
+                self.landmarks_estimate[i*2] = landmarks_estimate[0]
+                self.landmarks_estimate[i*2+1] = landmarks_estimate[1]
+
         # reward
-        V_jj_inv = diff_FoV_land(next_agent_pos, self.landmarks, self.num_landmarks, RADIUS, KAPPA, STD).astype(np.float32) # diff_FoV
+        V_jj_inv = diff_FoV_land(next_agent_pos, self.landmarks_estimate, self.num_landmarks, RADIUS, KAPPA, STD).astype(np.float32) # TODO replace self.landmarks with an estimated one
         next_info_mat = self.info_mat + V_jj_inv # update info
         reward = float(slogdet(next_info_mat)[1] - slogdet(self.info_mat)[1])
 
@@ -98,8 +109,9 @@ class SimpleQuadrotor(gym.Env):
 
         # update state
         self.state = np.hstack([
-            self.agent_pos,
-            self.info_mat.diagonal()
+            self.agent_pos[:2],
+            self.info_mat.diagonal(),
+            self.landmarks_estimate.flatten()
         ]).astype(np.float32)
 
         # record history poses
@@ -110,6 +122,7 @@ class SimpleQuadrotor(gym.Env):
     def reset(self):
         # landmark and info_mat init
         self.info_mat = self.info_mat_init
+        self.landmarks_estimate = self.landmarks + np.random.normal(0, STD, np.shape(self.landmarks))
 
         # agent pose init
         # self.agent_pos = np.zeros(STATE_DIM, dtype=np.float32)
@@ -118,8 +131,9 @@ class SimpleQuadrotor(gym.Env):
 
         # state init
         self.state = np.hstack([
-            self.agent_pos,
-            self.info_mat.diagonal()
+            self.agent_pos[:2],
+            self.info_mat.diagonal(),
+            self.landmarks_estimate.flatten()
         ]).astype(np.float32)
 
         # step counter init
