@@ -84,9 +84,9 @@ class SimpleQuadrotor(gym.Env):
             if np.linalg.norm(next_agent_pos[0:2] - self.landmarks[i*2: i*2+2].flatten()) < RADIUS:
                 sensor_value = self.landmarks[i*2: i*2+2].flatten() + np.random.normal(0, STD, [2,])
                 info_sensor = np.array([[self.info_mat[i*2,i*2], 0], [0, self.info_mat[i*2+1,i*2+1]]])
-                kalman_gain = info_sensor @ np.linalg.inv(info_sensor + STD**2*np.identity(2))
+                kalman_gain = np.linalg.inv(np.identity(2) + STD ** 2 * info_sensor)
                 landmarks_estimate = self.landmarks_estimate[i*2: i*2+2].flatten() + \
-                                              np.diagonal(kalman_gain * (sensor_value - self.landmarks_estimate[i*2: i*2+2].flatten()))  # no dynamics for the landmarks
+                                              kalman_gain @ (sensor_value - self.landmarks_estimate[i*2: i*2+2].flatten())  # no dynamics for the landmarks
                 self.landmarks_estimate[i*2] = landmarks_estimate[0]
                 self.landmarks_estimate[i*2+1] = landmarks_estimate[1]
 
