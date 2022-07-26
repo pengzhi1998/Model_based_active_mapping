@@ -4,8 +4,10 @@ import os
 import torch
 import numpy as np
 from env import SimpleQuadrotor
+from model import CustomActorCriticPolicy
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
@@ -22,7 +24,10 @@ args = parser.parse_args()
 def make_ppo_agent(env):
     policy_kwargs = dict(activation_fn=torch.nn.Tanh,
                          net_arch=[dict(pi=[512, 256], vf=[512, 256])])
-    model = PPO('MlpPolicy', env, verbose=1, n_steps=2048, seed=0, policy_kwargs=policy_kwargs,
+    # model = PPO('MlpPolicy', env, verbose=1, n_steps=1024, seed=0, policy_kwargs=policy_kwargs,
+    #             tensorboard_log=os.path.join(os.path.abspath(os.path.dirname(__file__)),
+    #                                          args.learning_curve_path))  # default
+    model = PPO(CustomActorCriticPolicy, env, verbose=1, n_steps=2048, seed=0, policy_kwargs=policy_kwargs,
                 tensorboard_log=os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                              args.learning_curve_path))  # default
     # model = PPO.load(os.path.join(os.path.abspath(os.path.dirname(__file__)),
@@ -45,6 +50,7 @@ if __name__ == '__main__':
     env = SimpleQuadrotor(args.num_landmarks, args.horizon, landmarks, False)
 
     # wrap with vector env
+    # env = make_vec_env(lambda: env, vec_env_cls=SubprocVecEnv, n_envs=2)
     env = make_vec_env(lambda: env, n_envs=1)
 
     # train agent
@@ -55,4 +61,4 @@ if __name__ == '__main__':
 
     model.learn(total_timesteps=NUM_STEPS,log_interval=LOG_INTERVAL, tb_log_name="default", callback=evaluation_callback)
     model.save(os.path.join(os.path.abspath(os.path.dirname(__file__)), args.model_path))
-    print([landmarks])
+    # print([landmarks])

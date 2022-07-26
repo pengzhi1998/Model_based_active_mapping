@@ -122,6 +122,7 @@ class SimpleQuadrotor(gym.Env):
     def reset(self):
         # landmark and info_mat init
         self.info_mat = self.info_mat_init
+        self.landmarks = np.random.uniform(low=-10, high=10, size=(15 * 2, 1))
         self.landmarks_estimate = self.landmarks + np.random.normal(0, STD, np.shape(self.landmarks))
 
         # agent pose init
