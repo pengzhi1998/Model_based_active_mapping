@@ -21,8 +21,8 @@ class CustomNetwork(nn.Module):
     def __init__(
         self,
         feature_dim: int,
-        last_layer_dim_pi: int = 2,
-        last_layer_dim_vf: int = 1,
+        last_layer_dim_pi: int = 64,
+        last_layer_dim_vf: int = 64,
     ):
         super(CustomNetwork, self).__init__()
 
@@ -41,16 +41,16 @@ class CustomNetwork(nn.Module):
         self.agent_pos_fc2_pi = nn.Linear(32, 32)
         self.landmark_fc1_pi = nn.Linear(4, 64)
         self.landmark_fc2_pi = nn.Linear(64, 32)
-        self.info_fc1_pi = nn.Linear(64, 32)
-        self.action_fc1_pi = nn.Linear(32, self.latent_dim_pi)
+        self.info_fc1_pi = nn.Linear(64, 64)
+        self.action_fc1_pi = nn.Linear(64, self.latent_dim_pi)
 
         # value net
         self.agent_pos_fc1_vf = nn.Linear(2, 32)
         self.agent_pos_fc2_vf = nn.Linear(32, 32)
         self.landmark_fc1_vf = nn.Linear(4, 64)
         self.landmark_fc2_vf = nn.Linear(64, 32)
-        self.info_fc1_vf = nn.Linear(64, 32)
-        self.action_fc1_vf = nn.Linear(32, self.latent_dim_vf)
+        self.info_fc1_vf = nn.Linear(64, 64)
+        self.value_fc1_vf = nn.Linear(64, self.latent_dim_vf)
 
         self.relu = nn.ReLU()
         self.tanh = nn.Tanh()
@@ -108,7 +108,7 @@ class CustomNetwork(nn.Module):
         landmark_embedding_att = torch.matmul(att, torch.transpose(landmark_embedding_tr, 1, 2)).squeeze(1)
 
         info_embedding = self.relu(self.info_fc1_vf(torch.cat((agent_pos_embedding, landmark_embedding_att), 1)))
-        value = self.tanh(self.action_fc1_vf(info_embedding))
+        value = self.tanh(self.value_fc1_vf(info_embedding))
         return value
 
 class CustomActorCriticPolicy(ActorCriticPolicy):

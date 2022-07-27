@@ -5,7 +5,7 @@ import numpy as np
 from stable_baselines3 import PPO
 from env import SimpleQuadrotor
 
-NUM_TEST = 4
+NUM_TEST = 10
 
 ACTION = np.array([[4, 3, 0], [0, -2, 0],
     [-4, -5, 0], [-2, -1, 0], [-1, 4, 0], [0, 4, 0]])/5
@@ -83,7 +83,7 @@ if __name__ == '__main__':
                                   "checkpoints/ppo_toy_active_mapping/5landmarks/best_model.zip"))
     elif args.num_landmarks == 15:
         model = PPO.load(os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                      "checkpoints/ppo_toy_active_mapping/15landmarks/best_model.zip"))
+                                      "checkpoints/ppo_toy_active_mapping/default/best_model.zip"))
     elif args.num_landmarks == 25:
         model = PPO.load(os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                       "checkpoints/ppo_toy_active_mapping/25landmarks/best_model.zip"))

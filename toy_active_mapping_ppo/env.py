@@ -11,9 +11,9 @@ from utils import unicycle_dyn, diff_FoV_land
 
 # env setting
 STATE_DIM = 3
-RADIUS = .5
+RADIUS = 1.5
 STD = 0.5
-KAPPA = 1  # TODO: increase
+KAPPA = 1.5  # TODO: increase
 
 # time & step
 STEP_SIZE = 1
