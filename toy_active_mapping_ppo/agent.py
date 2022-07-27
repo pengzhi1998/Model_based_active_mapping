@@ -1,13 +1,11 @@
 import argparse
 import sys
 import os
-import torch
 import numpy as np
-from env import SimpleQuadrotor
 from model import CustomActorCriticPolicy
+from gym.envs.registration import register
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.vec_env import SubprocVecEnv, VecMonitor
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
@@ -20,6 +18,12 @@ parser.add_argument('--bound', type=int, default=10)
 parser.add_argument('--learning-curve-path', default="tensorboard/ppo_toy_active_mapping/")
 parser.add_argument('--model-path', default="checkpoints/ppo_toy_active_mapping/default")
 args = parser.parse_args()
+
+register(
+    # unique identifier for the env `name-version`
+    id="SimpleQuadrotor-v0",
+    entry_point="env:SimpleQuadrotor",
+)
 
 def make_ppo_agent(env):
     # model = PPO('MlpPolicy', env, verbose=1, n_steps=1024, seed=0, policy_kwargs=policy_kwargs,
@@ -43,13 +47,11 @@ if __name__ == '__main__':
                  np.reshape(np.random.uniform(low=[8., -2.], high=[12., 2.], size=(args.num_landmarks//5, 2)), [10, 1]),
                  np.reshape(np.random.uniform(low=[-2., -12.], high=[2., -8.], size=(args.num_landmarks//5, 2)), [10, 1]),
                  np.reshape(np.random.uniform(low=[-2., -2.], high=[2., 2.], size=(args.num_landmarks//5, 2)), [10, 1])), 0)
-    env = SimpleQuadrotor(args.num_landmarks, args.horizon, landmarks, False)
 
     # wrap with vector env
-    env = make_vec_env(lambda: env, n_envs=1)
-    # env = make_vec_env(lambda: env, vec_env_cls=SubprocVecEnv, n_envs=2)
-    # env = VecMonitor(env)
-
+    env = make_vec_env("SimpleQuadrotor-v0", n_envs=1,
+                       env_kwargs={"num_landmarks" : args.num_landmarks, "horizon" : args.horizon,
+                                       "landmarks" : landmarks, "test" : False})
 
     # train agent
     model = make_ppo_agent(env)
