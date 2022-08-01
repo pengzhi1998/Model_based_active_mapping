@@ -80,10 +80,10 @@ if __name__ == '__main__':
     # load model
     if args.num_landmarks == 5:
         model = PPO.load(os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                  "checkpoints/ppo_toy_active_mapping/5landmarks/best_model.zip"))
+                                  "checkpoints/ppo_toy_active_mapping/default/best_model.zip"))
     elif args.num_landmarks == 15:
         model = PPO.load(os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                      "checkpoints/ppo_toy_active_mapping/default/best_model.zip"))
+                                      "checkpoints/ppo_toy_active_mapping/best_model.zip"))
     elif args.num_landmarks == 25:
         model = PPO.load(os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                       "checkpoints/ppo_toy_active_mapping/25landmarks/best_model.zip"))

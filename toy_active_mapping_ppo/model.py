@@ -82,6 +82,7 @@ class CustomNetwork(nn.Module):
         # attention
         landmark_embedding_tr = torch.transpose(landmark_embedding, 1, 2)
         att = self.softmax(torch.matmul(agent_pos_embedding.unsqueeze(1), landmark_embedding_tr))
+        # print(agent_pos_embedding.unsqueeze(1), landmark_embedding_tr, att, "\n\n")
         landmark_embedding_att = torch.matmul(att, torch.transpose(landmark_embedding_tr, 1, 2)).squeeze(1)
 
         info_embedding = self.relu(self.info_fc1_pi(torch.cat((agent_pos_embedding, landmark_embedding_att), 1)))

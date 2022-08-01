@@ -11,9 +11,9 @@ from utils import unicycle_dyn, diff_FoV_land
 
 # env setting
 STATE_DIM = 3
-RADIUS = 1.5
+RADIUS = 2
 STD = 0.5
-KAPPA = 1.5  # TODO: increase
+KAPPA = 1.  # TODO: increase
 
 # time & step
 STEP_SIZE = 1
@@ -116,13 +116,16 @@ class SimpleQuadrotor(gym.Env):
 
         # record history poses
         self.history_poses.append(self.agent_pos)
+        # print(np.sum(np.abs(self.landmarks - self.landmarks_estimate)))
 
         return self.state, reward, done, info
 
     def reset(self):
         # landmark and info_mat init
         self.info_mat = self.info_mat_init
-        self.landmarks = np.random.uniform(low=-10, high=10, size=(15 * 2, 1))
+        lx = np.random.uniform(low=-10, high=10, size=(self.num_landmarks, 1))
+        ly = np.random.uniform(low=-10, high=10, size=(self.num_landmarks, 1))
+        self.landmarks = np.concatenate((lx, ly), 1).reshape(self.num_landmarks*2, 1)
         self.landmarks_estimate = self.landmarks + np.random.normal(0, STD, np.shape(self.landmarks))
 
         # agent pose init

@@ -26,7 +26,9 @@ register(
 )
 
 def make_ppo_agent(env):
-    # model = PPO('MlpPolicy', env, verbose=1, n_steps=1024, seed=0, policy_kwargs=policy_kwargs,
+    # policy_kwargs = dict(activation_fn=torch.nn.Tanh,
+    #                      net_arch=[dict(pi=[512, 256], vf=[512, 256])])
+    # model = PPO('MlpPolicy', env, verbose=1, n_steps=2048, seed=0, policy_kwargs=policy_kwargs,
     #             tensorboard_log=os.path.join(os.path.abspath(os.path.dirname(__file__)),
     #                                          args.learning_curve_path))  # default
     model = PPO(CustomActorCriticPolicy, env, verbose=1, n_steps=2048, seed=0,
