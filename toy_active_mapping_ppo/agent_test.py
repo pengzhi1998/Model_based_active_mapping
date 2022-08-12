@@ -5,7 +5,7 @@ import numpy as np
 from stable_baselines3 import PPO
 from env import SimpleQuadrotor
 
-NUM_TEST = 10
+NUM_TEST = 20
 
 ACTION = np.array([[4, 3, 0], [0, -2, 0],
     [-4, -5, 0], [-2, -1, 0], [-1, 4, 0], [0, 4, 0]])/5

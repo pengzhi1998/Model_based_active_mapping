@@ -10,3 +10,4 @@ toy_active_mapping_ppo/__pycache__
 toy_active_mapping_ppo/checkpoints
 toy_active_mapping_ppo/plots
 toy_active_mapping_ppo/tensorboard
+toy_active_mapping_ppo/Unity_envs
