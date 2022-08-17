@@ -126,6 +126,9 @@ class landmark_based_mapping(gym.Env):
         next_agent_pos = unicycle_dyn(self.agent_pos, action, self.step_size).astype(np.float32)
 
         obs_unity, _, _, _ = self.env_unity.step([next_agent_pos[0], next_agent_pos[1]])  # reward, termination, and other info aren't needed
+        # print(np.shape(obs_unity), np.unique(obs_unity[1]))
+        # plt.imshow(obs_unity[0])
+        # plt.show()
 
         # update the estimated landmarks' positions
         for i in range(self.num_landmarks):
