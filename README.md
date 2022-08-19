@@ -1,4 +1,14 @@
-# RL for Active Mapping
-## Table of Contents
-* [Toy Landmark-Based Active Mapping](toy_active_mapping/README.md)
-* [iCR: Volumetric Active Mapping](iCR/README.md)
+# iCR: Volumetric Active Mapping
+## Installation
+
+```
+conda create -n landmark_mapping
+conda activate landmark_mapping
+pip install -r requirements.txt
+cd ./
+git clone --branch release_18 https://github.com/Unity-Technologies/ml-agents.git
+cd ./ml-agents
+python -m pip install mlagents==0.27.0
+pip install -e ./ml-agents-envs
+pip install -e ./ml-agents
+```

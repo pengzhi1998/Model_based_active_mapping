@@ -1,8 +1,0 @@
-rl_mapping/agents/__pycache__
-rl_mapping/mapping/__pycache__
-rl_mapping/sensors/__pycache__
-rl_mapping/utilities/__pycache__
-rl_mapping/envs/__pycache__
-rl_mapping/networks/__pycache__
-rl_mapping/scripts/checkpoints
-rl_mapping/scripts/tensorboard

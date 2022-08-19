@@ -95,6 +95,34 @@ class SimpleQuadrotor(gym.Env):
         next_info_mat = self.info_mat + V_jj_inv # update info
         reward = float(slogdet(next_info_mat)[1] - slogdet(self.info_mat)[1])
 
+
+        # # update the estimated landmarks' and agent's positions
+        # agent_estimate_prior = unicycle_dyn(self.agent_estimate, action, self.step_size).astype(np.float32)
+        # slam_estimate_prior = np.concatenate((agent_estimate_prior[0:2], self.landmarks_estimate))
+        #
+        # # update the estimated landmarks' positions
+        # for i in range(self.num_landmarks):
+        #     if np.linalg.norm(next_agent_pos[0:2] - self.landmarks[i * 2: i * 2 + 2].flatten()) < RADIUS:
+        #         sensor_value[i * 2:i * 2 + 2] = self.landmarks[i * 2: i * 2 + 2].flatten() - next_agent_pos[0:2] + np.random.normal(0, STD, [2, ])
+        #     else:
+        #         sensor_value = self.landmarks_estimate[i * 2: i * 2 + 2].flatten() - next_agent_pos_estimate[0:2]
+        #
+        # H_mat = np.zeros((2 * self.num_landmarks, 2 * self.num_landmarks + 2))
+        # H_mat[:, 2: 2 * self.num_landmarks] = np.eye(2 * self.num_landmarks)
+        # for i in range(self.num_landmarks):
+        #     H_mat[2 * i, 0], H_mat[2 * i + 1, 1] = -1, -1
+        #
+        # S_mat = H_mat @ np.linalg.inv(self.infomat) @ H_mat.transpose() + R_mat
+        # kalman_gain = np.linalg.inv(self.infomat) @ H_mat @ np.linalg.inv(S_mat)
+        # slam_estimate = slam_estimate_prior + kalman_gain @ (sensor_value - H_mat @ slam_estimate_prior)
+        # self.agent_estimate, self.landmarks_estimate = slam_estimate[0:2], slam_estimate[2:2 * self.num_landmarks]
+        #
+        # # reward
+        # V_jj_inv = diff_FoV_land(self.agent_estimate, self.landmarks_estimate, self.num_landmarks, RADIUS, KAPPA, STD).astype(np.float32)
+        # next_info_mat = self.info_mat + H_mat.transpose() @ V_jj_inv @ H_mat  # update info
+        # reward = float(slogdet(next_info_mat)[1] - slogdet(self.info_mat)[1])
+
+
         # terminate at time
         done = False
         if self.current_step >= self.total_step-1:

@@ -1,8 +1,0 @@
-gym
-numpy
-scipy
-matplotlib
-opencv-python
-stable-baselines3
-tensorboard
-protobuf~=3.19.0
