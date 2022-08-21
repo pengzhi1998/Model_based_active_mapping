@@ -32,15 +32,15 @@ STEP_SIZE = 1
 
 
 
-class PosChannel(SideChannel):
+class InfoChannel(SideChannel):
     def __init__(self) -> None:
         super().__init__(uuid.UUID("621f0a70-4f87-11ea-a6bf-784f4387d1f7"))
 
     def on_message_received(self, msg: IncomingMessage) -> None:
-        self.count = msg.read_float32_list()
+        self.infos = msg.read_float32_list()
 
-    def print_count(self):
-        print(self.count)
+    def prints(self, agent_pos):
+        print(self.infos, agent_pos)
 
     def assign_landmark_pos(self, data: List[float]) -> None:
         msg = OutgoingMessage()
@@ -58,7 +58,7 @@ class landmark_based_mapping(gym.Env):
         self.total_time = horizon
         self.step_size = STEP_SIZE
         self.total_step = math.floor(self.total_time / STEP_SIZE)
-        self.current_step = -1
+        self.current_step = 0
 
         # action space
         # defined as {-1, 1} as suggested by stable_baslines3, rescaled to {-2, 2} later in step()
@@ -105,10 +105,10 @@ class landmark_based_mapping(gym.Env):
         print("landmarks' positions:", [self.landmarks])
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.pos_info = PosChannel()
+        self.info_channel = InfoChannel()
         config_channel = EngineConfigurationChannel()
         unity_env = UnityEnvironment(os.path.abspath("./") + "/Unity_envs/Landmark",
-                                     side_channels=[config_channel, self.pos_info])
+                                     side_channels=[config_channel, self.info_channel])
 
 
         config_channel.set_configuration_parameters(time_scale=10, capture_frame_rate=100)
@@ -116,7 +116,6 @@ class landmark_based_mapping(gym.Env):
 
     def step(self, action):
         self.current_step += 1
-        # self.pos_info.print_count()
 
         # rescale actions
         action *= 3
@@ -134,6 +133,7 @@ class landmark_based_mapping(gym.Env):
         # print(np.shape(obs_unity), np.unique(obs_unity[1]))
         # plt.imshow(obs_unity[0])
         # plt.show()
+        # self.info_channel.prints(next_agent_pos)
 
         # update the estimated landmarks' positions
         for i in range(self.num_landmarks):
@@ -153,7 +153,7 @@ class landmark_based_mapping(gym.Env):
 
         # terminate at time
         done = False
-        if self.current_step >= self.total_step-1:
+        if self.current_step >= self.total_step:
             done = True
 
         # info
@@ -184,7 +184,7 @@ class landmark_based_mapping(gym.Env):
         lx = np.random.uniform(low=-10, high=10, size=(self.num_landmarks, 1))
         ly = np.random.uniform(low=-10, high=10, size=(self.num_landmarks, 1))
         self.landmarks = np.concatenate((lx, ly), 1).reshape(self.num_landmarks*2, 1)
-        self.pos_info.assign_landmark_pos(self.landmarks)
+        self.info_channel.assign_landmark_pos(self.landmarks)
         self.landmarks_estimate = self.landmarks + np.random.normal(0, STD, np.shape(self.landmarks))
 
         # agent pose init
@@ -194,6 +194,9 @@ class landmark_based_mapping(gym.Env):
         obs_unity, _, _, _ = self.env_unity.step([self.agent_pos[0], self.agent_pos[1]])
         # self.agent_pos = np.array([0, 0, 0])
 
+        # print("after reset:")
+        # self.info_channel.prints(self.agent_pos)
+
         # state init
         self.state = np.hstack([
             self.agent_pos[:2],
@@ -202,7 +205,7 @@ class landmark_based_mapping(gym.Env):
         ]).astype(np.float32)
 
         # step counter init
-        self.current_step = -1
+        self.current_step = 0
 
         # plot
         self.history_poses = [self.agent_pos]
