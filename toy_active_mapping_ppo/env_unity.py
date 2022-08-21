@@ -130,8 +130,23 @@ class landmark_based_mapping(gym.Env):
         next_agent_pos = unicycle_dyn(self.agent_pos, action, self.step_size).astype(np.float32)
 
         obs_unity, _, _, _ = self.env_unity.step([next_agent_pos[0], next_agent_pos[1]])  # reward, termination, and other info aren't needed
+
+        # # for debug
+        # if len(np.unique(obs_unity[1])) > 10:
+        #     check_semantic = np.array(obs_unity[1][:, :, 0])
+        #     different_values_semantic = np.unique(obs_unity[1])
+        #     check_depth = np.array(obs_unity[0][:, :, 0])
+        #     different_values_depth = np.unique(obs_unity[0])
+        #     plt.imshow(obs_unity[1])
+        #     plt.show()
+        #     plt.imshow(obs_unity[0])
+        #     plt.show()
+        #     print(check_semantic, different_values_semantic, check_depth, different_values_depth)
+
         # print(np.shape(obs_unity), np.unique(obs_unity[1]))
         # plt.imshow(obs_unity[0])
+        # plt.show()
+        # plt.imshow(obs_unity[1])
         # plt.show()
         # self.info_channel.prints(next_agent_pos)
 
