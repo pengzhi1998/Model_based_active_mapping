@@ -1,4 +1,6 @@
-# iCR: Volumetric Active Mapping
+# Landmark-based mapping
+Design a RL policy which drives the agent to localize and update the landmarks' positions with fixed steps in a randomized 
+environment.
 ## Installation
 
 ```

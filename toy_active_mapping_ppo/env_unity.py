@@ -37,7 +37,10 @@ class PosChannel(SideChannel):
         super().__init__(uuid.UUID("621f0a70-4f87-11ea-a6bf-784f4387d1f7"))
 
     def on_message_received(self, msg: IncomingMessage) -> None:
-        pass
+        self.count = msg.read_float32_list()
+
+    def print_count(self):
+        print(self.count)
 
     def assign_landmark_pos(self, data: List[float]) -> None:
         msg = OutgoingMessage()
@@ -55,6 +58,7 @@ class landmark_based_mapping(gym.Env):
         self.total_time = horizon
         self.step_size = STEP_SIZE
         self.total_step = math.floor(self.total_time / STEP_SIZE)
+        self.current_step = -1
 
         # action space
         # defined as {-1, 1} as suggested by stable_baslines3, rescaled to {-2, 2} later in step()
@@ -112,6 +116,7 @@ class landmark_based_mapping(gym.Env):
 
     def step(self, action):
         self.current_step += 1
+        # self.pos_info.print_count()
 
         # rescale actions
         action *= 3
@@ -185,7 +190,7 @@ class landmark_based_mapping(gym.Env):
         # agent pose init
         # self.agent_pos = np.zeros(STATE_DIM, dtype=np.float32)
         self.agent_pos = np.array([random.uniform(-2, 2), random.uniform(-2, 2), 0])
-        print("agent_pos:", self.agent_pos)
+        # print("agent_pos:", self.agent_pos, self.current_step)
         obs_unity, _, _, _ = self.env_unity.step([self.agent_pos[0], self.agent_pos[1]])
         # self.agent_pos = np.array([0, 0, 0])
 

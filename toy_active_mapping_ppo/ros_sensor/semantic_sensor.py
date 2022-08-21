@@ -70,8 +70,8 @@ class SemanticPclGenerator:
 
         np.place(depth_img, depth_img == 0, 100000)  # Handle maximum range measurements
 
-        bgr_img = bgr_img.view('<u1')
-        depth_img = depth_img.view('<f4')
+        bgr_img = bgr_img.view('<u1')  # uint8
+        depth_img = depth_img.view('<f4')  # float32
         # Add depth information
         self.xyd_vect[:, 0:2] = self.xy_index * depth_img.reshape(-1, 1) / 1000  # Division by 1000 for unit conversion
         self.xyd_vect[:, 2:3] = depth_img.reshape(-1, 1) / 1000  # Division by 1000 for unit conversion
