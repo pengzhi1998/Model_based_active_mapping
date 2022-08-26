@@ -97,3 +97,6 @@ def diff_FoV_land(x,y,n_y,r,kap,std):
         V_jj_inv[2 * j, 2 * j] = 1 / (std ** 2) * (1 - Phi)
         V_jj_inv[2 * j + 1, 2 * j+1] = 1 / (std ** 2) * (1 - Phi)
     return V_jj_inv
+
+# def square_SDF(q, length):
+

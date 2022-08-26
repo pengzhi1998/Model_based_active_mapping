@@ -113,6 +113,33 @@ class landmark_based_mapping(gym.Env):
 
         config_channel.set_configuration_parameters(time_scale=10, capture_frame_rate=100)
         self.env_unity = UnityToGymWrapper(unity_env, allow_multiple_obs=True)
+        self.width, self.height = 100, 100
+        # homogenous intrinsic matrix with f_x and f_y both 50 millimeters, and the central point is (50, 50) in the image
+        self.intrinsic = np.matrix([[0.05, 0, 50], [0, 0.05, 50], [0, 0, 1]], dtype=np.float32)
+        self.intrinsic_homogeneous = np.matrix([[0.05, 0, 50, 0], [0, 0.05, 50, 0], [0, 0, 1, 0], [0, 0, 0, 1]], dtype=np.float32)
+        self.rotation = np.matrix([[0, 0, 1], [-1, 0, 0], [0, -1, 0]])
+        x_index = np.array([list(range(100)) * 100])
+        y_index = np.array([[i] * 100 for i in list(range(100))]).ravel()
+        self.xy_index = np.vstack((x_index, y_index)).T  # x,y
+        self.xyd_vect = np.zeros([100 * 100, 3])  # x,y,depth
+        self.XYZ_vect = np.zeros([100 * 100, 3])  # real world coord
+        self.pxToMetre = 0.1/self.width  # sensor_size/image_size
+        self.landmarks_sem_color = np.array([[0, 0, 1],
+                                             [0, 1, 0.7],
+                                             [0, 1, 0],
+                                             [1, 0, 0],
+                                             [1, 1, 0]], dtype=np.float32)
+        self.landmarks_sem_color_mapping = np.ones((5, 100, 100, 3))
+        for i in range(len(self.landmarks_sem_color)):
+            mask_r = np.full((self.height, self.width), self.landmarks_sem_color[i, 0])
+            mask_g = np.full((self.height, self.width), self.landmarks_sem_color[i, 1])
+            mask_b = np.full((self.height, self.width), self.landmarks_sem_color[i, 2])
+            self.landmarks_sem_color_mapping[i] = np.stack((mask_r, mask_g, mask_b), 2)
+
+        self.lx = np.random.uniform(low=-11, high=-10, size=(self.num_landmarks, 1))
+        self.ly = np.random.uniform(low=-11, high=-10, size=(self.num_landmarks, 1))
+        self.lx[1] = 1.5
+        self.ly[1] = 1.5
 
     def step(self, action):
         self.current_step += 1
@@ -129,19 +156,84 @@ class landmark_based_mapping(gym.Env):
         # dynamics
         next_agent_pos = unicycle_dyn(self.agent_pos, action, self.step_size).astype(np.float32)
 
-        obs_unity, _, _, _ = self.env_unity.step([next_agent_pos[0], next_agent_pos[1]])  # reward, termination, and other info aren't needed
+        # obs_unity, _, _, _ = self.env_unity.step([next_agent_pos[0], next_agent_pos[1]])  # reward, termination, and other info aren't needed
+        obs_unity, _, _, _ = self.env_unity.step([0, 1])  # reward, termination, and other info aren't needed
 
-        # # for debug
-        # if len(np.unique(obs_unity[1])) > 10:
-        #     check_semantic = np.array(obs_unity[1][:, :, 0])
-        #     different_values_semantic = np.unique(obs_unity[1])
-        #     check_depth = np.array(obs_unity[0][:, :, 0])
-        #     different_values_depth = np.unique(obs_unity[0])
-        #     plt.imshow(obs_unity[1])
-        #     plt.show()
-        #     plt.imshow(obs_unity[0])
-        #     plt.show()
-        #     print(check_semantic, different_values_semantic, check_depth, different_values_depth)
+        # restore the real depth values
+        normalized_depth = obs_unity[0] ** 2.2
+        normalized_depth = normalized_depth ** (1 / 0.25)
+        depth_img = (normalized_depth * 10 + (1 - normalized_depth) * 0.3)[:, :, 0] - 0.05  # delet the focal length
+
+        semantic_img = np.around(obs_unity[1], 2)
+        mask_ = semantic_img == self.landmarks_sem_color_mapping[1]
+        # test1 = mask_[:, :, 0]
+        # test2 = mask_[:, :, 1]
+        # test3 = mask_[:, :, 2]
+        # test4 = semantic_img[:, :, 2]
+        # test5 = self.landmarks_sem_color_mapping[1][:, :, 2]
+        # test6 = self.landmarks_sem_color_mapping[1][80, 60, 2]
+        # test7 = semantic_img[80, 60, 2]
+        # test8 = test6 == test7
+        mask = mask_[:, :, 0] & mask_[:, :, 1] & mask_[:, :, 2]
+        mask_index = np.stack(np.where(mask)).T
+        mask_depth_img = depth_img[mask_index.T.tolist()].reshape(-1, 1)
+        # mask_index[:, [0, 1]] = mask_index[:, [1, 0]]
+        test9 = np.where(mask)
+        test10 = np.stack(test9)
+        # self.xyd_vect[:, 0:2] = self.xy_index * depth_img.reshape(-1, 1) * self.pxToMetre
+        # self.xyd_vect[:, 2:3] = depth_img.reshape(-1, 1) * self.pxToMetre  # pxToMetre for unit conversion
+        # self.XYZ_vect[:, 0:3] = self.xyd_vect.dot(self.intrinsic.I.T)
+        xyd_vect_uv = mask_index * mask_depth_img * self.pxToMetre
+        xyd_vect_z = mask_depth_img * self.pxToMetre  # pxToMetre for unit conversion
+        XYZ_vect = self.intrinsic.I.dot(np.hstack((xyd_vect_uv, xyd_vect_z)).T)
+
+        xyd_vect_homogeneous = np.hstack((xyd_vect_uv, xyd_vect_z, np.ones(np.shape(xyd_vect_z))))
+        XYZ_vect_homogeneous = self.intrinsic_homogeneous.I.dot(xyd_vect_homogeneous.T)
+        XYZ_vect_homogeneous[[0, 1], :] = XYZ_vect_homogeneous[[1, 0], :]
+        XYZ_vect_homogeneous[1, :] *= -1
+        XYZ_vect_homogeneous[2, :] *= self.pxToMetre
+        extrinsic = np.vstack((np.hstack((self.rotation, np.array([[-1], [0], [-1]]))), np.array([[0, 0, 0, 1]])))
+        XYZ_world = extrinsic.I.dot(XYZ_vect_homogeneous)
+        print(np.mean(XYZ_vect_homogeneous[1, :]), np.mean(XYZ_vect_homogeneous[0, :]), np.mean(XYZ_vect_homogeneous[2, :]),
+              np.mean(XYZ_world[1, :]), np.mean(XYZ_world[0, :]), np.mean(XYZ_world[2, :]),"\n\n")
+
+        # landmark_index = np.where(semantic_img[:, :, 0] == self.landmarks_sem_color[0, 0]) \
+        #                  and np.where(semantic_img[:, :, 1] == self.landmarks_sem_color[0, 1]) \
+        #                  and np.where(semantic_img[:, :, 2] == self.landmarks_sem_color[0, 2])
+
+
+        for i in range(self.num_landmarks):
+            if np.linalg.norm(next_agent_pos[0:2] - self.landmarks[i*2: i*2+2].flatten()) < RADIUS:
+                # restore the real depth values
+                normalized_depth = obs_unity[0] ** 2.2
+                normalized_depth = normalized_depth ** (1 / 0.25)
+                depth_img = (normalized_depth * 10 + (1 - normalized_depth) * 0.3)[:, :,
+                            0] - 0.05  # delet the focal length
+
+                semantic_img = np.around(obs_unity[1], 2)
+                mask_ = semantic_img == self.landmarks_sem_color_mapping[i]
+                mask = mask_[:, :, 0] & mask_[:, :, 1] & mask_[:, :, 2]
+
+                self.xyd_vect[:, 0:2] = self.xy_index * depth_img.reshape(-1, 1) * self.pxToMetre
+                self.xyd_vect[:, 2:3] = depth_img.reshape(-1, 1) * self.pxToMetre  # pxToMetre for unit conversion
+                self.XYZ_vect[:, 0:3] = self.xyd_vect.dot(self.intrinsic.I.T)
+
+        # print(np.shape(sbf), np.shape(linearzfromnear), np.shape(depth), np.shape(obs_unity[0]), depth_unique)
+
+        # for debug
+        if len(np.unique(obs_unity[1])) > 1:
+            semantic_img = np.around(obs_unity[1], 2)
+            check_semantic_r = np.array(semantic_img[:, :, 0])
+            check_semantic_g = np.array(semantic_img[:, :, 1])
+            check_semantic_b = np.array(semantic_img[:, :, 2])
+            different_values_semantic = np.unique(semantic_img)
+            check_depth = np.array(obs_unity[0][:, :, 0])
+            different_values_depth = np.unique(obs_unity[0])
+            # plt.imshow(obs_unity[1])
+            # plt.show()
+            # plt.imshow(obs_unity[0])
+            # plt.show()
+            # print(check_semantic, different_values_semantic, check_depth, different_values_depth)
 
         # print(np.shape(obs_unity), np.unique(obs_unity[1]))
         # plt.imshow(obs_unity[0])
@@ -196,8 +288,11 @@ class landmark_based_mapping(gym.Env):
         self.env_unity.reset()
 
         self.info_mat = self.info_mat_init
-        lx = np.random.uniform(low=-10, high=10, size=(self.num_landmarks, 1))
-        ly = np.random.uniform(low=-10, high=10, size=(self.num_landmarks, 1))
+        # lx = np.random.uniform(low=-10, high=10, size=(self.num_landmarks, 1))
+        # ly = np.random.uniform(low=-10, high=10, size=(self.num_landmarks, 1))
+        lx = self.lx
+        ly = self.ly
+
         self.landmarks = np.concatenate((lx, ly), 1).reshape(self.num_landmarks*2, 1)
         self.info_channel.assign_landmark_pos(self.landmarks)
         self.landmarks_estimate = self.landmarks + np.random.normal(0, STD, np.shape(self.landmarks))
@@ -206,7 +301,7 @@ class landmark_based_mapping(gym.Env):
         # self.agent_pos = np.zeros(STATE_DIM, dtype=np.float32)
         self.agent_pos = np.array([random.uniform(-2, 2), random.uniform(-2, 2), 0])
         # print("agent_pos:", self.agent_pos, self.current_step)
-        obs_unity, _, _, _ = self.env_unity.step([self.agent_pos[0], self.agent_pos[1]])
+        obs_unity, _, _, _ = self.env_unity.step([0, 1])
         # self.agent_pos = np.array([0, 0, 0])
 
         # print("after reset:")
