@@ -82,7 +82,6 @@ def circle_SDF(q, r):
     SDF, Grad = np.linalg.norm(q) ** 2 - r ** 2, 2 * q
     return SDF, Grad
 
-
 def Gaussian_CDF(x, kap):
     Psi = (1 + erf(x / (np.sqrt(2) * kap) - 2)) / 2
     Psi_der = 1 / (np.sqrt(2 * np.pi) * kap) * np.exp(- (x / (np.sqrt(2) * kap) - 2) ** 2)
@@ -98,5 +97,16 @@ def diff_FoV_land(x,y,n_y,r,kap,std):
         V_jj_inv[2 * j + 1, 2 * j+1] = 1 / (std ** 2) * (1 - Phi)
     return V_jj_inv
 
-# def square_SDF(q, length):
+def square_SDF(q, length=2):
+    q_bound = np.square(q) - length ** 2
+    return np.linalg.norm(np.maximum(q_bound, 0)) + np.minimum(np.amax(q_bound, axis=1), 0)
 
+def diff_FoV_land_square(x ,y ,n_y ,length ,kap ,std):
+    V_jj_inv = np.zeros((2 * n_y, 2 * n_y))
+    for j in range(n_y):
+        q = x[:2] - y[j * 2: j * 2 + 2].T
+        SDF = square_SDF(q, length)
+        Phi, Phi_der =  Gaussian_CDF(SDF, kap)
+        V_jj_inv[2 * j, 2 * j] = 1 / (std ** 2) * (1 - Phi)
+        V_jj_inv[2 * j + 1, 2 * j+1] = 1 / (std ** 2) * (1 - Phi)
+    return V_jj_inv

@@ -11,7 +11,7 @@ from typing import List
 from numpy.linalg import slogdet
 from gym import spaces
 from stable_baselines3.common.env_checker import check_env
-from utils import unicycle_dyn, diff_FoV_land
+from utils import unicycle_dyn, diff_FoV_land, diff_FoV_land_square
 from mlagents_envs.environment import UnityEnvironment
 from gym_unity.envs import UnityToGymWrapper
 from mlagents_envs.side_channel.side_channel import (
@@ -151,6 +151,7 @@ class landmark_based_mapping(gym.Env):
         next_agent_pos = unicycle_dyn(self.agent_pos, action, self.step_size).astype(np.float32)
         obs_unity, _, _, _ = self.env_unity.step([next_agent_pos[0], next_agent_pos[1]])  # reward, termination, and other info aren't needed
         # print("\n\ncurrent agent position:", next_agent_pos[:2])
+        # self.info_channel.prints(next_agent_pos)
 
         # update the estimated landmarks' positions
         for i in range(self.num_landmarks):
@@ -178,6 +179,16 @@ class landmark_based_mapping(gym.Env):
                     (np.hstack((self.rotation, np.array([[-next_agent_pos[1]], [next_agent_pos[0]], [-1]]))), np.array([[0, 0, 0, 1]])))
                 XYZ_world = extrinsic.I.dot(XYZ_vect_homogeneous)
                 sensor_value = np.array([np.mean(XYZ_world[0, :]), np.mean(XYZ_world[2, :])])
+                # print("estimated landmark position:", sensor_value)
+                # if np.isnan(sensor_value)[0] == True:
+                #     r_test = obs_unity[1][:, :, 0]
+                #     g_test = obs_unity[1][:, :, 1]
+                #     b_test = obs_unity[1][:, :, 2]
+                #     depth_test = obs_unity[0][:, :, 0]
+                #     plt.imshow(obs_unity[1])
+                #     plt.show()
+                #     plt.imshow(obs_unity[0])
+                #     plt.show()
                 info_sensor = np.array([[self.info_mat[i * 2, i * 2], 0], [0, self.info_mat[i * 2 + 1, i * 2 + 1]]])
                 kalman_gain = np.linalg.inv(np.identity(2) + STD ** 2 * info_sensor)
                 landmarks_estimate = self.landmarks_estimate[i * 2: i * 2 + 2].flatten() + \
@@ -188,7 +199,7 @@ class landmark_based_mapping(gym.Env):
                 # print("landmark_id:", i, "estimated_position:", np.mean(XYZ_world[0, :]), np.mean(XYZ_world[2, :]))
 
         # reward
-        V_jj_inv = diff_FoV_land(next_agent_pos, self.landmarks_estimate, self.num_landmarks, RADIUS, KAPPA, STD).astype(np.float32) # TODO replace self.landmarks with an estimated one
+        V_jj_inv = diff_FoV_land_square(next_agent_pos, self.landmarks_estimate, self.num_landmarks, RADIUS, KAPPA, STD).astype(np.float32) # TODO replace self.landmarks with an estimated one
         next_info_mat = self.info_mat + V_jj_inv # update info
         reward = float(slogdet(next_info_mat)[1] - slogdet(self.info_mat)[1])
 
@@ -224,7 +235,15 @@ class landmark_based_mapping(gym.Env):
         self.info_mat = self.info_mat_init
         lx = np.random.uniform(low=-10, high=10, size=(self.num_landmarks, 1))
         ly = np.random.uniform(low=-10, high=10, size=(self.num_landmarks, 1))
-        # print("landmarks positions:", lx, ly)
+        dis_mat = np.sqrt((lx - lx.T) ** 2 + (ly - ly.T) ** 2) + np.eye(self.num_landmarks)
+        self.check_mat = dis_mat < 1
+        while self.check_mat.__contains__(True):
+            lx = np.random.uniform(low=-10, high=10, size=(self.num_landmarks, 1))
+            ly = np.random.uniform(low=-10, high=10, size=(self.num_landmarks, 1))
+            dis_mat = np.sqrt((lx - lx.T) ** 2 + (ly - ly.T) ** 2) + np.eye(self.num_landmarks)
+            self.check_mat = dis_mat < 1
+
+        # print("landmarks positions:", lx, ly, "\n\n")
 
         self.landmarks = np.concatenate((lx, ly), 1).reshape(self.num_landmarks*2, 1)
         self.info_channel.assign_landmark_pos(self.landmarks)
