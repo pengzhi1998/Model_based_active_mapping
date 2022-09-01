@@ -180,15 +180,15 @@ class landmark_based_mapping(gym.Env):
                 XYZ_world = extrinsic.I.dot(XYZ_vect_homogeneous)
                 sensor_value = np.array([np.mean(XYZ_world[0, :]), np.mean(XYZ_world[2, :])])
                 # print("estimated landmark position:", sensor_value)
-                # if np.isnan(sensor_value)[0] == True:
-                #     r_test = obs_unity[1][:, :, 0]
-                #     g_test = obs_unity[1][:, :, 1]
-                #     b_test = obs_unity[1][:, :, 2]
-                #     depth_test = obs_unity[0][:, :, 0]
-                #     plt.imshow(obs_unity[1])
-                #     plt.show()
-                #     plt.imshow(obs_unity[0])
-                #     plt.show()
+                if np.isnan(sensor_value)[0] == True:
+                    r_test = obs_unity[1][:, :, 0]
+                    g_test = obs_unity[1][:, :, 1]
+                    b_test = obs_unity[1][:, :, 2]
+                    depth_test = obs_unity[0][:, :, 0]
+                    plt.imshow(obs_unity[1])
+                    plt.show()
+                    plt.imshow(obs_unity[0])
+                    plt.show()
                 info_sensor = np.array([[self.info_mat[i * 2, i * 2], 0], [0, self.info_mat[i * 2 + 1, i * 2 + 1]]])
                 kalman_gain = np.linalg.inv(np.identity(2) + STD ** 2 * info_sensor)
                 landmarks_estimate = self.landmarks_estimate[i * 2: i * 2 + 2].flatten() + \

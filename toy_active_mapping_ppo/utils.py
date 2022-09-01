@@ -97,8 +97,9 @@ def diff_FoV_land(x,y,n_y,r,kap,std):
         V_jj_inv[2 * j + 1, 2 * j+1] = 1 / (std ** 2) * (1 - Phi)
     return V_jj_inv
 
+# this squared SDF is borrowed from this great repo: https://github.com/fogleman/sdf.git
 def square_SDF(q, length=2):
-    q_bound = np.square(q) - length ** 2
+    q_bound = np.square(q) - length ** 2  # TODO: check whether to use square
     return np.linalg.norm(np.maximum(q_bound, 0)) + np.minimum(np.amax(q_bound, axis=1), 0)
 
 def diff_FoV_land_square(x ,y ,n_y ,length ,kap ,std):
@@ -110,3 +111,15 @@ def diff_FoV_land_square(x ,y ,n_y ,length ,kap ,std):
         V_jj_inv[2 * j, 2 * j] = 1 / (std ** 2) * (1 - Phi)
         V_jj_inv[2 * j + 1, 2 * j+1] = 1 / (std ** 2) * (1 - Phi)
     return V_jj_inv
+
+if __name__ == '__main__':
+    import matplotlib.pyplot as plt
+    density = 8
+    a = np.ones((density*8+1, density*8+1))
+    for i in np.linspace(-4, 4, density*8+1):
+        for j in np.linspace(-4, 4, density*8+1):
+            a[int((i+4)*density), int((j+4)*density)] = square_SDF(np.array([[i, j]]))
+
+    fig, ax = plt.subplots()
+    plt.imshow(a, cmap='gist_heat', extent=[-4,4,-4,4])
+    plt.show()
