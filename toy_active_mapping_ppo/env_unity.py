@@ -25,7 +25,7 @@ from mlagents_envs.side_channel.engine_configuration_channel import EngineConfig
 STATE_DIM = 3
 RADIUS = 2
 STD = 0.5
-KAPPA = 1.  # TODO: increase
+KAPPA = 1.
 
 # time & step
 STEP_SIZE = 1
@@ -49,16 +49,18 @@ class InfoChannel(SideChannel):
 
 class landmark_based_mapping(gym.Env):
     metadata = {'render.modes': ['human', 'terminal']}
-    def __init__(self, num_landmarks, horizon, landmarks, test=False):
+    def __init__(self, num_landmarks, horizon, landmarks, boundary, test=False):
         super(landmark_based_mapping, self).__init__()
 
         # variables
         self.num_landmarks = num_landmarks
+        self.boundary = boundary
         self.test = test
         self.total_time = horizon
         self.step_size = STEP_SIZE
         self.total_step = math.floor(self.total_time / STEP_SIZE)
         self.current_step = 0
+        self.radius = np.array([RADIUS, RADIUS])
 
         # action space
         # defined as {-1, 1} as suggested by stable_baslines3, rescaled to {-2, 2} later in step()
@@ -155,7 +157,8 @@ class landmark_based_mapping(gym.Env):
 
         # update the estimated landmarks' positions
         for i in range(self.num_landmarks):
-            if np.linalg.norm(next_agent_pos[0:2] - self.landmarks[i*2: i*2+2].flatten()) < RADIUS:
+            sensor_result = np.abs(next_agent_pos[0:2] - self.landmarks[i * 2: i * 2 + 2].flatten()) < self.radius
+            if sensor_result[0] and sensor_result[1]:  # sensor shape in square
                 # restore the real depth values
                 normalized_depth = obs_unity[0] ** 2.2
                 normalized_depth = normalized_depth ** (1 / 0.25)
@@ -233,13 +236,13 @@ class landmark_based_mapping(gym.Env):
         self.env_unity.reset()
 
         self.info_mat = self.info_mat_init
-        lx = np.random.uniform(low=-10, high=10, size=(self.num_landmarks, 1))
-        ly = np.random.uniform(low=-10, high=10, size=(self.num_landmarks, 1))
+        lx = np.random.uniform(low=-self.boundary, high=self.boundary, size=(self.num_landmarks, 1))
+        ly = np.random.uniform(low=-self.boundary, high=self.boundary, size=(self.num_landmarks, 1))
         dis_mat = np.sqrt((lx - lx.T) ** 2 + (ly - ly.T) ** 2) + np.eye(self.num_landmarks)
         self.check_mat = dis_mat < 1
         while self.check_mat.__contains__(True):
-            lx = np.random.uniform(low=-10, high=10, size=(self.num_landmarks, 1))
-            ly = np.random.uniform(low=-10, high=10, size=(self.num_landmarks, 1))
+            lx = np.random.uniform(low=-self.boundary, high=self.boundary, size=(self.num_landmarks, 1))
+            ly = np.random.uniform(low=-self.boundary, high=self.boundary, size=(self.num_landmarks, 1))
             dis_mat = np.sqrt((lx - lx.T) ** 2 + (ly - ly.T) ** 2) + np.eye(self.num_landmarks)
             self.check_mat = dis_mat < 1
 
@@ -251,7 +254,7 @@ class landmark_based_mapping(gym.Env):
 
         # agent pose init
         # self.agent_pos = np.zeros(STATE_DIM, dtype=np.float32)
-        self.agent_pos = np.array([random.uniform(-2, 2), random.uniform(-2, 2), 0])
+        self.agent_pos = np.array([random.uniform(-self.boundary, self.boundary), random.uniform(-self.boundary, self.boundary), 0])
         # print("agent_pos:", self.agent_pos, self.current_step)
         obs_unity, _, _, _ = self.env_unity.step([0, 1])
         # self.agent_pos = np.array([0, 0, 0])

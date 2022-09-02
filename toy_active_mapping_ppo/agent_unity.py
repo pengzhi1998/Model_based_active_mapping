@@ -16,7 +16,7 @@ import argparse
 parser = argparse.ArgumentParser(description='landmark-based mapping')
 parser.add_argument('--num-landmarks', type=int, default=5)
 parser.add_argument('--horizon', type=int, default=15)
-parser.add_argument('--bound', type=int, default=5)
+parser.add_argument('--bound', type=int, default=10)
 parser.add_argument('--learning-curve-path', default="tensorboard/ppo_toy_active_mapping/")
 parser.add_argument('--model-path', default="checkpoints/ppo_toy_active_mapping/default")
 args = parser.parse_args()
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     # wrap with vector env
     env = make_vec_env("landmark_based_mapping-v0", n_envs=1,
                        env_kwargs={"num_landmarks" : args.num_landmarks, "horizon" : args.horizon,
-                                       "landmarks" : landmarks, "test" : False})
+                                       "landmarks" : landmarks, "boundary" : args.bound, "test" : False})
 
     # train agent
     model = make_ppo_agent(env)

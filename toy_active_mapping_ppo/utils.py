@@ -99,7 +99,7 @@ def diff_FoV_land(x,y,n_y,r,kap,std):
 
 # this squared SDF is borrowed from this great repo: https://github.com/fogleman/sdf.git
 def square_SDF(q, length=2):
-    q_bound = np.square(q) - length ** 2  # TODO: check whether to use square
+    q_bound = np.abs(q) - length  # TODO: check whether to use square
     return np.linalg.norm(np.maximum(q_bound, 0)) + np.minimum(np.amax(q_bound, axis=1), 0)
 
 def diff_FoV_land_square(x ,y ,n_y ,length ,kap ,std):
