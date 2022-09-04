@@ -13,7 +13,7 @@ from utils import unicycle_dyn, diff_FoV_land
 STATE_DIM = 3
 RADIUS = 2
 STD = 0.5
-KAPPA = 1.  # TODO: increase
+KAPPA = .5  # TODO: increase
 
 # time & step
 STEP_SIZE = 1
@@ -62,7 +62,7 @@ class SimpleQuadrotor(gym.Env):
                                            [  1.56218378], [ -9.692394  ], [  0.96991876], [  0.52073575], [  0.32736877], [ -1.91824347], [ -1.15989369], [  0.17873951],
                                            [  1.07646068], [ -0.99721908], [ -0.85641724], [  1.40958035]])
         self.info_mat_init = np.diag([.5] * self.num_landmarks * 2).astype(np.float32)
-        print("landmarks' positions:", [self.landmarks])
+        self.info_mat = self.info_mat_init.copy()
 
     def step(self, action):
         self.current_step += 1
@@ -141,6 +141,7 @@ class SimpleQuadrotor(gym.Env):
             self.info_mat.diagonal(),
             self.landmarks_estimate.flatten()
         ]).astype(np.float32)
+        # print("state:", self.state)
 
         # record history poses
         self.history_poses.append(self.agent_pos)
@@ -150,7 +151,11 @@ class SimpleQuadrotor(gym.Env):
 
     def reset(self):
         # landmark and info_mat init
-        self.info_mat = self.info_mat_init
+        self.info_mat = self.info_mat_init.copy()
+        # an extremely large value which guarantee this landmark's position has much lower uncertainty
+        self.random_serial = np.random.randint(0, self.num_landmarks)
+        self.info_mat[self.random_serial * 2, self.random_serial * 2], \
+        self.info_mat[self.random_serial * 2 + 1, self.random_serial * 2 + 1] = 100, 100
         lx = np.random.uniform(low=-10, high=10, size=(self.num_landmarks, 1))
         ly = np.random.uniform(low=-10, high=10, size=(self.num_landmarks, 1))
         self.landmarks = np.concatenate((lx, ly), 1).reshape(self.num_landmarks*2, 1)
@@ -193,7 +198,10 @@ class SimpleQuadrotor(gym.Env):
 
         # plot landmarks
         self.ax.scatter(self.landmarks[list(range(0, self.num_landmarks*2, 2)), :],
-                        self.landmarks[list(range(1, self.num_landmarks*2+1, 2)), :], s=50, c='blue', label="landmark")
+                        self.landmarks[list(range(1, self.num_landmarks*2+1, 2)), :], s=50, c='blue', label="landmark_0.5")
+        self.ax.scatter(self.landmarks[2 * self.random_serial, :],
+                        self.landmarks[2 * self.random_serial + 1, :], s=50, c='green',
+                        label="landmark_100")
 
         # annotate theta value to each position point
         # for i in range(0, len(self.history_poses)-1):

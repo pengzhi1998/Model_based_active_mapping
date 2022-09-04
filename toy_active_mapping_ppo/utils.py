@@ -79,7 +79,7 @@ def triangle_SDF(q, psi, r):
     return SDF, Grad
 
 def circle_SDF(q, r):
-    SDF, Grad = np.linalg.norm(q) ** 2 - r ** 2, 2 * q
+    SDF, Grad = np.linalg.norm(q) - r, 2 * q
     return SDF, Grad
 
 def Gaussian_CDF(x, kap):
@@ -123,3 +123,6 @@ if __name__ == '__main__':
     fig, ax = plt.subplots()
     plt.imshow(a, cmap='gist_heat', extent=[-4,4,-4,4])
     plt.show()
+
+    # test the SDF function's performance
+    # print(Gaussian_CDF(.5, -.2))

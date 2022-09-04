@@ -1,6 +1,7 @@
 import argparse
 import sys
 import os
+import torch
 import numpy as np
 from model import CustomActorCriticPolicy
 from gym.envs.registration import register
@@ -12,8 +13,8 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 NUM_STEPS = 1e6
 LOG_INTERVAL = 1
 parser = argparse.ArgumentParser(description='landmark-based mapping')
-parser.add_argument('--num-landmarks', type=int, default=15)
-parser.add_argument('--horizon', type=int, default=45)
+parser.add_argument('--num-landmarks', type=int, default=5)
+parser.add_argument('--horizon', type=int, default=15)
 parser.add_argument('--bound', type=int, default=10)
 parser.add_argument('--learning-curve-path', default="tensorboard/ppo_toy_active_mapping/")
 parser.add_argument('--model-path', default="checkpoints/ppo_toy_active_mapping/default")

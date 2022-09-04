@@ -25,7 +25,7 @@ from mlagents_envs.side_channel.engine_configuration_channel import EngineConfig
 STATE_DIM = 3
 RADIUS = 2
 STD = 0.5
-KAPPA = 1.
+KAPPA = .5
 
 # time & step
 STEP_SIZE = 1
@@ -104,13 +104,14 @@ class landmark_based_mapping(gym.Env):
                      [0.17873951],
                      [1.07646068], [-0.99721908], [-0.85641724], [1.40958035]])
         self.info_mat_init = np.diag([.5] * self.num_landmarks * 2).astype(np.float32)
-        print("landmarks' positions:", [self.landmarks])
+        self.info_mat = self.info_mat_init.copy()
+        # print("landmarks' positions:", [self.landmarks])
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.info_channel = InfoChannel()
         config_channel = EngineConfigurationChannel()
         unity_env = UnityEnvironment(os.path.abspath("./") + "/Unity_envs/Landmark",
-                                     side_channels=[config_channel, self.info_channel])
+                                     side_channels=[config_channel, self.info_channel], worker_id=1, base_port=5001)
 
         config_channel.set_configuration_parameters(time_scale=10, capture_frame_rate=100)
         self.env_unity = UnityToGymWrapper(unity_env, allow_multiple_obs=True)
@@ -205,6 +206,7 @@ class landmark_based_mapping(gym.Env):
         V_jj_inv = diff_FoV_land_square(next_agent_pos, self.landmarks_estimate, self.num_landmarks, RADIUS, KAPPA, STD).astype(np.float32) # TODO replace self.landmarks with an estimated one
         next_info_mat = self.info_mat + V_jj_inv # update info
         reward = float(slogdet(next_info_mat)[1] - slogdet(self.info_mat)[1])
+        # print(slogdet(next_info_mat)[1], slogdet(self.info_mat)[1], next_info_mat)
 
         # terminate at time
         done = False
@@ -224,6 +226,7 @@ class landmark_based_mapping(gym.Env):
             self.info_mat.diagonal(),
             self.landmarks_estimate.flatten()
         ]).astype(np.float32)
+        # print("state:", self.state)
 
         # record history poses
         self.history_poses.append(self.agent_pos)
@@ -233,9 +236,14 @@ class landmark_based_mapping(gym.Env):
 
     def reset(self):
         # landmark and info_mat init
+        # print(self.info_mat)
         self.env_unity.reset()
 
-        self.info_mat = self.info_mat_init
+        self.info_mat = self.info_mat_init.copy()
+        # an extremely large value which guarantee this landmark's position has much lower uncertainty
+        self.random_serial = np.random.randint(0, self.num_landmarks)
+        self.info_mat[self.random_serial * 2, self.random_serial * 2], \
+        self.info_mat[self.random_serial * 2 + 1, self.random_serial * 2 + 1] = 100, 100
         lx = np.random.uniform(low=-self.boundary, high=self.boundary, size=(self.num_landmarks, 1))
         ly = np.random.uniform(low=-self.boundary, high=self.boundary, size=(self.num_landmarks, 1))
         dis_mat = np.sqrt((lx - lx.T) ** 2 + (ly - ly.T) ** 2) + np.eye(self.num_landmarks)
@@ -294,7 +302,11 @@ class landmark_based_mapping(gym.Env):
 
         # plot landmarks
         self.ax.scatter(self.landmarks[list(range(0, self.num_landmarks*2, 2)), :],
-                        self.landmarks[list(range(1, self.num_landmarks*2+1, 2)), :], s=50, c='blue', label="landmark")
+                        self.landmarks[list(range(1, self.num_landmarks*2+1, 2)), :], s=50, c='blue', label="landmark_0")
+        self.ax.scatter(self.landmarks[2 * self.random_serial, :],
+                        self.landmarks[2 * self.random_serial + 1, :], s=50, c='green',
+                        label="landmark_100")
+        print(self.landmarks, self.random_serial)
 
         # annotate theta value to each position point
         # for i in range(0, len(self.history_poses)-1):

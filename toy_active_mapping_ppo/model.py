@@ -55,6 +55,7 @@ class CustomNetwork(nn.Module):
         self.relu = nn.ReLU()
         self.tanh = nn.Tanh()
         self.softmax = nn.Softmax(dim=2)
+        # self.Norm = nn.LayerNorm()
 
 
     def forward(self, observation: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -81,9 +82,9 @@ class CustomNetwork(nn.Module):
 
         # attention
         landmark_embedding_tr = torch.transpose(landmark_embedding, 1, 2)
-        att = self.softmax(torch.matmul(agent_pos_embedding.unsqueeze(1), landmark_embedding_tr))
+        att = self.softmax(torch.matmul(agent_pos_embedding.unsqueeze(1), landmark_embedding_tr)/4)
         # print(agent_pos_embedding.unsqueeze(1), landmark_embedding_tr, att, "\n\n")
-        landmark_embedding_att = torch.matmul(att, torch.transpose(landmark_embedding_tr, 1, 2)).squeeze(1)
+        landmark_embedding_att = self.relu((torch.matmul(att, torch.transpose(landmark_embedding_tr, 1, 2)).squeeze(1)))
 
         info_embedding = self.relu(self.info_fc1_pi(torch.cat((agent_pos_embedding, landmark_embedding_att), 1)))
         action = self.tanh(self.action_fc1_pi(info_embedding))
@@ -105,8 +106,8 @@ class CustomNetwork(nn.Module):
 
         # attention
         landmark_embedding_tr = torch.transpose(landmark_embedding, 1, 2)
-        att = self.softmax(torch.matmul(agent_pos_embedding.unsqueeze(1), landmark_embedding_tr))
-        landmark_embedding_att = torch.matmul(att, torch.transpose(landmark_embedding_tr, 1, 2)).squeeze(1)
+        att = self.softmax(torch.matmul(agent_pos_embedding.unsqueeze(1), landmark_embedding_tr)/4)
+        landmark_embedding_att = self.relu((torch.matmul(att, torch.transpose(landmark_embedding_tr, 1, 2)).squeeze(1)))
 
         info_embedding = self.relu(self.info_fc1_vf(torch.cat((agent_pos_embedding, landmark_embedding_att), 1)))
         value = self.tanh(self.value_fc1_vf(info_embedding))
