@@ -1,6 +1,6 @@
 import numpy as np
-
 from scipy.special import erf
+np.random.seed(100)
 
 def state_to_T(state):
     return np.array([[np.cos(state[2]), -np.sin(state[2]), state[0]], [np.sin(state[2]), np.cos(state[2]), state[1]],
@@ -29,6 +29,7 @@ def unicycle_dyn(state,u,dt):
     T = state_to_T(state)
     T_next = SE2_motion(T,u,dt)
     state_next = T_to_state(T_next)
+                 # + np.random.normal(0, .2, [3,])
     return state_next
 
 

@@ -13,18 +13,17 @@ from utils import unicycle_dyn, diff_FoV_land
 STATE_DIM = 3
 RADIUS = 2
 STD = 0.5
-KAPPA = .5  # TODO: increase
+KAPPA = 0.5
 
 # time & step
 STEP_SIZE = 1
-
 random.seed(100)
 np.random.seed(100)
 
 class SimpleQuadrotor(gym.Env):
     metadata = {'render.modes': ['human', 'terminal']}
 
-    def __init__(self, num_landmarks, horizon, landmarks, test=False):
+    def __init__(self, bound, num_landmarks, horizon, landmarks, for_comparison=False, special_case=False, test=False):
         super(SimpleQuadrotor, self).__init__()
 
         # variables
@@ -33,6 +32,7 @@ class SimpleQuadrotor(gym.Env):
         self.total_time = horizon
         self.step_size = STEP_SIZE
         self.total_step = math.floor(self.total_time / STEP_SIZE)
+        self.bound = bound
 
         # action space
         # defined as {-1, 1} as suggested by stable_baslines3, rescaled to {-2, 2} later in step()
@@ -63,6 +63,9 @@ class SimpleQuadrotor(gym.Env):
                                            [  1.07646068], [ -0.99721908], [ -0.85641724], [  1.40958035]])
         self.info_mat_init = np.diag([.5] * self.num_landmarks * 2).astype(np.float32)
         self.info_mat = self.info_mat_init.copy()
+
+        self.for_comparison = for_comparison
+        self.special_case = special_case
 
     def step(self, action):
         self.current_step += 1
@@ -154,10 +157,11 @@ class SimpleQuadrotor(gym.Env):
         self.info_mat = self.info_mat_init.copy()
         # an extremely large value which guarantee this landmark's position has much lower uncertainty
         self.random_serial = np.random.randint(0, self.num_landmarks)
-        self.info_mat[self.random_serial * 2, self.random_serial * 2], \
-        self.info_mat[self.random_serial * 2 + 1, self.random_serial * 2 + 1] = 100, 100
-        lx = np.random.uniform(low=-10, high=10, size=(self.num_landmarks, 1))
-        ly = np.random.uniform(low=-10, high=10, size=(self.num_landmarks, 1))
+        if self.special_case == True:
+            self.info_mat[self.random_serial * 2, self.random_serial * 2], \
+            self.info_mat[self.random_serial * 2 + 1, self.random_serial * 2 + 1] = 100, 100
+        lx = np.random.uniform(low=-self.bound, high=self.bound, size=(self.num_landmarks, 1))
+        ly = np.random.uniform(low=-self.bound, high=self.bound, size=(self.num_landmarks, 1))
         self.landmarks = np.concatenate((lx, ly), 1).reshape(self.num_landmarks*2, 1)
         self.landmarks_estimate = self.landmarks + np.random.normal(0, STD, np.shape(self.landmarks))
 
@@ -199,7 +203,8 @@ class SimpleQuadrotor(gym.Env):
         # plot landmarks
         self.ax.scatter(self.landmarks[list(range(0, self.num_landmarks*2, 2)), :],
                         self.landmarks[list(range(1, self.num_landmarks*2+1, 2)), :], s=50, c='blue', label="landmark_0.5")
-        self.ax.scatter(self.landmarks[2 * self.random_serial, :],
+        if self.special_case == True:
+            self.ax.scatter(self.landmarks[2 * self.random_serial, :],
                         self.landmarks[2 * self.random_serial + 1, :], s=50, c='green',
                         label="landmark_100")
 

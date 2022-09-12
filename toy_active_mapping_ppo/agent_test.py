@@ -5,7 +5,7 @@ import numpy as np
 from stable_baselines3 import PPO
 from env import SimpleQuadrotor
 
-NUM_TEST = 20
+NUM_TEST = 10
 
 ACTION = np.array([[4, 3, 0], [0, -2, 0],
     [-4, -5, 0], [-2, -1, 0], [-1, 4, 0], [0, 4, 0]])/5
@@ -16,12 +16,22 @@ parser.add_argument('--horizon', type=int, default=15)
 parser.add_argument('--bound', type=int, default=10)
 parser.add_argument('--learning-curve-path', default="tensorboard/ppo_toy_active_mapping/")
 parser.add_argument('--model-path', default="checkpoints/ppo_toy_active_mapping/default")
+parser.add_argument('--model', default="attention")
+parser.add_argument('--seed', type=int, default=0, help="use multiple seeds to train, values should be 0, 10, and 100")
+parser.add_argument('--for-comparison', type=int, default=0, help="0 means this code is running for training or simple tests,"
+                                                                  "otherwise this is for large-scale tests, while we need to read the"
+                                                                  "randomized landmarks' and agent's initial positions from a generated"
+                                                                  "txt file for fair comparison with landmark-based iCR")
+parser.add_argument('--special-case', type=int, default=0, help="0 means all the initial information values are the same, 0.5,"
+                                                                "otherwise there would be one with a special value, like 100")
+parser.add_argument('--dynamics-noise', type=int, default=0, help="0 means there would be dynamics noise during testing, "
+                                                                  "otherwise there is no noise for both testing and training")
 args = parser.parse_args()
 
 def test_agent(agent):
     # get env
     landmarks = np.random.uniform(low=-args.bound, high=args.bound, size=(args.num_landmarks * 2, 1))
-    env = SimpleQuadrotor(args.num_landmarks, args.horizon, landmarks, True)
+    env = SimpleQuadrotor(args.bound, args.num_landmarks, args.horizon, landmarks, args.for_comparison, args.special_case, True)
 
     # get parameters
     try:
@@ -78,15 +88,8 @@ def test_agent(agent):
 
 if __name__ == '__main__':
     # load model
-    if args.num_landmarks == 5:
-        model = PPO.load(os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                  "checkpoints/ppo_toy_active_mapping/default/best_model.zip"))
-    elif args.num_landmarks == 15:
-        model = PPO.load(os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                      "checkpoints/ppo_toy_active_mapping/best_model.zip"))
-    elif args.num_landmarks == 25:
-        model = PPO.load(os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                      "checkpoints/ppo_toy_active_mapping/25landmarks/best_model.zip"))
+    model = PPO.load(os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                  "checkpoints/ppo_toy_active_mapping/default/landmark_{}-seed_{}-model_{}/best_model.zip".format(args.num_landmarks, args.seed, args.model)))
 
     # test
     test_agent(model)
