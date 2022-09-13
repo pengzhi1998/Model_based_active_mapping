@@ -63,8 +63,7 @@ if __name__ == '__main__':
 
     # wrap with vector env
     env = make_vec_env("SimpleQuadrotor-v0", n_envs=1,
-                       env_kwargs={"bound": args.bound, "num_landmarks" : args.num_landmarks, "horizon" : args.horizon,
-                                       "landmarks" : landmarks, "for_comparison" : args.for_comparison,
+                       env_kwargs={"bound": args.bound, "num_landmarks" : args.num_landmarks, "horizon" : args.horizon, "for_comparison" : args.for_comparison,
                                    "special_case" : args.special_case, "test" : False})
 
     # train agent
