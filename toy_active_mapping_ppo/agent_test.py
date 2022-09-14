@@ -90,7 +90,7 @@ def test_agent(agent):
 
         t = 0
         while not done:
-            if t == 0 or t == args.horizon/3 - 1 or t == args.horizon*2/3 - 1:
+            if t == 0 or t == int(args.horizon/3 - 1) or t == int(args.horizon*2/3 - 1):
                 total_reward_ = format(total_reward, '.2f')
                 if args.for_comparison == False:
                     if t == 0:
@@ -120,16 +120,16 @@ def test_agent(agent):
         print(f"count: {args.count*10+eps}, return = {total_reward}")
         if args.for_comparison == True:
             if (args.count*10+eps) % 30 == 0:
-                data = ["model_" + args.model + "_num_landmarks_" + str(args.num_landmarks) + "\n" + str(total_reward) + "\n"]
+                data = ["model_" + args.model + "_num_landmarks_" + str(args.num_landmarks) + "\n" + str(np.round(total_reward, 3)) + " " + str(np.round(info, 3)) + "\n"]
             else:
-                data = [str(total_reward) + "\n"]
+                data = [str(np.round(total_reward, 3)) + " " + str(np.round(info, 3)) + "\n"]
             for element in data:
                 my_open_results.write(element)
         reward_list.append(total_reward)
         total_reward_ = format(total_reward, '.2f')
         if args.for_comparison == False:
             env.save_plot(name=os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                             "plots/test_landmarknum{}_eps{}_step{}.png".format(args.num_landmarks, eps, t)), title=f'return = {total_reward_}')
+                                             "plots/test_landmarknum{}_eps{}_step{}_model_{}_seed{}.png".format(args.num_landmarks, eps, t, args.model, args.seed)), title=f'return = {total_reward_}')
     env.close()
     print(f"mean and std of total return = {np.mean(reward_list), np.std(reward_list)}")
     my_open_results.close()

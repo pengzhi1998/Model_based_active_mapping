@@ -114,7 +114,10 @@ class SimpleQuadrotor(gym.Env):
             done = True
 
         # info
-        info = {'info_mat': next_info_mat}
+        if self.for_comparison == False:
+            info = {'info_mat': next_info_mat}
+        else:
+            info = np.mean(np.abs(self.landmarks - self.landmarks_estimate))
 
         # update variables
         self.agent_pos = next_agent_pos
@@ -201,7 +204,7 @@ class SimpleQuadrotor(gym.Env):
         self.ax.set_ylabel("y", fontdict={'size': 16})
 
         # title
-        self.ax.set_title(title, fontdict={'size': 16})
+        # self.ax.set_title(title, fontdict={'size': 16})
 
         # legend
         if legend == True:
