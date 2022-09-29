@@ -89,6 +89,10 @@ def test_agent(agent):
         # print(f"init state = {obs}")
 
         t = 0
+        env.save_plot(name=os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                        "plots/test_landmarknum{}_eps{}_step{}_model_{}_seed{}.png".format(
+                                            args.num_landmarks, eps, t, args.model, args.seed)),
+                      title=f'return = {0}')
         while not done:
             if t == 0 or t == int(args.horizon/3 - 1) or t == int(args.horizon*2/3 - 1):
                 total_reward_ = format(total_reward, '.2f')
@@ -114,6 +118,10 @@ def test_agent(agent):
             # render
             if args.for_comparison == False:
                 env.render(mode='human')
+                env.save_plot(name=os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                                "plots/test_landmarknum{}_eps{}_step{}_model_{}_seed{}.png".format(
+                                                    args.num_landmarks, eps, t, args.model, args.seed)),
+                              title=f'return = {0}')
 
         # summary
         print("---")

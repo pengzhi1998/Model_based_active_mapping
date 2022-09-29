@@ -18,7 +18,7 @@ parser.add_argument('--num-landmarks', type=int, default=5)
 parser.add_argument('--horizon', type=int, default=15)
 parser.add_argument('--bound', type=int, default=10)
 parser.add_argument('--learning-curve-path', default="tensorboard/ppo_toy_active_mapping/")
-parser.add_argument('--model-path', default="checkpoints/ppo_toy_active_mapping/default")
+parser.add_argument('--model-path', default="checkpoints/ppo_toy_active_mapping/default/Unity")
 args = parser.parse_args()
 
 from gym.envs.registration import register

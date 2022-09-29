@@ -161,11 +161,11 @@ class landmark_based_mapping(gym.Env):
             sensor_result = np.abs(next_agent_pos[0:2] - self.landmarks[i * 2: i * 2 + 2].flatten()) < self.radius
             if sensor_result[0] and sensor_result[1]:  # sensor shape in square
                 # restore the real depth values
-                normalized_depth = obs_unity[0] ** 2.2
+                normalized_depth = obs_unity[1] ** 2.2
                 normalized_depth = normalized_depth ** (1 / 0.25)
                 depth_img = (normalized_depth * 10 + (1 - normalized_depth) * 0.3)[:, :, 0] - 0.05  # remove the focal length in depth values
-
-                semantic_img = np.around(obs_unity[1], 2)
+                depth_img += np.clip(np.random.normal(0, STD, np.shape(depth_img)), -1, 1)
+                semantic_img = np.around(obs_unity[2], 2)
                 mask_ = semantic_img == self.landmarks_sem_color_mapping[i]
                 mask = mask_[:, :, 0] & mask_[:, :, 1] & mask_[:, :, 2]
                 mask_index = np.stack(np.where(mask)).T
@@ -185,19 +185,20 @@ class landmark_based_mapping(gym.Env):
                 sensor_value = np.array([np.mean(XYZ_world[0, :]), np.mean(XYZ_world[2, :])])
                 # print("estimated landmark position:", sensor_value)
                 if np.isnan(sensor_value)[0] == True:
-                    r_test = obs_unity[1][:, :, 0]
-                    g_test = obs_unity[1][:, :, 1]
-                    b_test = obs_unity[1][:, :, 2]
+                    r_test = obs_unity[3][:, :, 0]
+                    g_test = obs_unity[3][:, :, 1]
+                    b_test = obs_unity[3][:, :, 2]
                     depth_test = obs_unity[0][:, :, 0]
-                    plt.imshow(obs_unity[1])
+                    plt.imshow(obs_unity[3])
                     plt.show()
-                    plt.imshow(obs_unity[0])
+                    plt.imshow(obs_unity[2])
                     plt.show()
                 info_sensor = np.array([[self.info_mat[i * 2, i * 2], 0], [0, self.info_mat[i * 2 + 1, i * 2 + 1]]])
                 kalman_gain = np.linalg.inv(np.identity(2) + STD ** 2 * info_sensor)
                 landmarks_estimate = self.landmarks_estimate[i * 2: i * 2 + 2].flatten() + \
                                      kalman_gain @ (sensor_value - self.landmarks_estimate[
                                                                    i * 2: i * 2 + 2].flatten())  # no dynamics for the landmarks
+                # print(landmarks_estimate, i, self.landmarks)
                 self.landmarks_estimate[i * 2] = landmarks_estimate[0]
                 self.landmarks_estimate[i * 2 + 1] = landmarks_estimate[1]
                 # print("landmark_id:", i, "estimated_position:", np.mean(XYZ_world[0, :]), np.mean(XYZ_world[2, :]))
@@ -207,6 +208,11 @@ class landmark_based_mapping(gym.Env):
         next_info_mat = self.info_mat + V_jj_inv # update info
         reward = float(slogdet(next_info_mat)[1] - slogdet(self.info_mat)[1])
         # print(slogdet(next_info_mat)[1], slogdet(self.info_mat)[1], next_info_mat)
+
+        plt.imsave("plots/rgb{}.png".format(self.current_step), obs_unity[0])
+        plt.imsave("plots/depth{}.png".format(self.current_step), obs_unity[1])
+        plt.imsave("plots/semantic{}.png".format(self.current_step), obs_unity[2])
+        plt.imsave("plots/main{}.png".format(self.current_step), obs_unity[3])
 
         # terminate at time
         done = False
@@ -241,9 +247,9 @@ class landmark_based_mapping(gym.Env):
 
         self.info_mat = self.info_mat_init.copy()
         # an extremely large value which guarantee this landmark's position has much lower uncertainty
-        self.random_serial = np.random.randint(0, self.num_landmarks)
-        self.info_mat[self.random_serial * 2, self.random_serial * 2], \
-        self.info_mat[self.random_serial * 2 + 1, self.random_serial * 2 + 1] = 100, 100
+        # self.random_serial = np.random.randint(0, self.num_landmarks)
+        # self.info_mat[self.random_serial * 2, self.random_serial * 2], \
+        # self.info_mat[self.random_serial * 2 + 1, self.random_serial * 2 + 1] = 100, 100
         lx = np.random.uniform(low=-self.boundary, high=self.boundary, size=(self.num_landmarks, 1))
         ly = np.random.uniform(low=-self.boundary, high=self.boundary, size=(self.num_landmarks, 1))
         dis_mat = np.sqrt((lx - lx.T) ** 2 + (ly - ly.T) ** 2) + np.eye(self.num_landmarks)
@@ -264,7 +270,7 @@ class landmark_based_mapping(gym.Env):
         # self.agent_pos = np.zeros(STATE_DIM, dtype=np.float32)
         self.agent_pos = np.array([random.uniform(-self.boundary, self.boundary), random.uniform(-self.boundary, self.boundary), 0])
         # print("agent_pos:", self.agent_pos, self.current_step)
-        obs_unity, _, _, _ = self.env_unity.step([0, 1])
+        obs_unity, _, _, _ = self.env_unity.step([0, 0])
         # self.agent_pos = np.array([0, 0, 0])
 
         # print("after reset:")
@@ -287,41 +293,49 @@ class landmark_based_mapping(gym.Env):
             self.fig = plt.figure(1)
             self.ax = self.fig.gca()
 
+        plt.imsave("plots/rgb{}.png".format(self.current_step), obs_unity[0])
+        plt.imsave("plots/depth{}.png".format(self.current_step), obs_unity[1])
+        plt.imsave("plots/semantic{}.png".format(self.current_step), obs_unity[2])
+        plt.imsave("plots/main{}.png".format(self.current_step), obs_unity[3])
+
         return self.state
 
     def _plot(self, legend, title='trajectory'):
 
         # plot agent trajectory
-        plt.tick_params(labelsize=11)
+        plt.tick_params(labelsize=15)
         history_poses = np.array(self.history_poses)
-        self.ax.plot(history_poses[:, 0], history_poses[:, 1], c='black', linewidth=2, label='agent trajectory')
+        self.ax.plot(history_poses[:, 0], history_poses[:, 1], c='black', linewidth=3, label='agent trajectory')
 
         # plot agent trajectory start & end
-        self.ax.scatter(history_poses[0, 0], history_poses[0, 1], marker='>', s=50, c='red', label="start")
-        self.ax.scatter(history_poses[-1, 0], history_poses[-1, 1], marker='s', s=50, c='red', label="end")
+        self.ax.scatter(history_poses[0, 0], history_poses[0, 1], marker='>', s=70, c='red', label="start")
+        self.ax.scatter(history_poses[-1, 0], history_poses[-1, 1], marker='s', s=70, c='red', label="end")
 
         # plot landmarks
         self.ax.scatter(self.landmarks[list(range(0, self.num_landmarks*2, 2)), :],
-                        self.landmarks[list(range(1, self.num_landmarks*2+1, 2)), :], s=50, c='blue', label="landmark_0")
-        self.ax.scatter(self.landmarks[2 * self.random_serial, :],
-                        self.landmarks[2 * self.random_serial + 1, :], s=50, c='green',
-                        label="landmark_100")
-        print(self.landmarks, self.random_serial)
+                        self.landmarks[list(range(1, self.num_landmarks*2+1, 2)), :], s=50, c='blue', label="landmark")
+        # self.ax.scatter(self.landmarks[2 * self.random_serial, :],
+        #                 self.landmarks[2 * self.random_serial + 1, :], s=50, c='green',
+        #                 label="landmark_100")
+        # print(self.landmarks, self.random_serial)
 
         # annotate theta value to each position point
         # for i in range(0, len(self.history_poses)-1):
         #     self.ax.annotate(round(self.history_actions[i][2], 4), history_poses[i, :2])
 
         # axes
-        self.ax.set_xlabel("x", fontdict={'size': 16})
-        self.ax.set_ylabel("y", fontdict={'size': 16})
+        self.ax.set_xlabel("x", fontdict={'size': 20})
+        self.ax.set_ylabel("y", fontdict={'size': 20})
 
         # title
-        self.ax.set_title(title, fontdict={'size': 16})
+        # self.ax.set_title(title, fontdict={'size': 16})
 
+        self.ax.set_facecolor('whitesmoke')
+        plt.grid(alpha=0.4)
         # legend
         if legend == True:
             self.ax.legend()
+            plt.legend(prop={'size': 14})
 
     def render(self, mode='human'):
         if mode == 'terminal':
@@ -343,10 +357,10 @@ class landmark_based_mapping(gym.Env):
         else:
             raise NotImplementedError
 
-    def save_plot(self, name='default.png', title='trajectory', legend=False):
+    def save_plot(self, name='default.png', title='trajectory', legend=True):
         self.ax.cla()
         self._plot(legend, title=title)
-        self.fig.savefig(name)
+        self.fig.savefig(name, bbox_inches = 'tight')
 
     def close (self):
         plt.close('all')

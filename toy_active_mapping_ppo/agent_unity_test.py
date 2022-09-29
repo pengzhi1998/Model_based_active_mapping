@@ -15,15 +15,16 @@ parser.add_argument('--num-landmarks', type=int, default=5)
 parser.add_argument('--horizon', type=int, default=15)
 parser.add_argument('--bound', type=int, default=10)
 parser.add_argument('--learning-curve-path', default="tensorboard/ppo_toy_active_mapping/")
-parser.add_argument('--model-path', default="checkpoints/ppo_toy_active_mapping/default")
+parser.add_argument('--model-path', default="checkpoints/ppo_toy_active_mapping/default/Unity")
 args = parser.parse_args()
-
+# results_file_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+#                                 "plots/testing_results.txt")
 
 def test_agent(agent):
     # get env
     landmarks = np.random.uniform(low=-args.bound, high=args.bound, size=(args.num_landmarks * 2, 1))
     env = landmark_based_mapping(args.num_landmarks, args.horizon, landmarks, args.bound, True)
-
+    # my_open_results = open(results_file_path, "a")
     # get parameters
     try:
         gamma = float(agent.gamma)
@@ -44,17 +45,17 @@ def test_agent(agent):
 
         t = 0
         while not done:
-            if t == 0 or t == args.horizon / 3 - 1 or t == args.horizon * 2 / 3 - 1:
-                total_reward_ = format(total_reward, '.2f')
-                if t == 0:
-                    env.save_plot(name=os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                                    "plots/test_landmarknum{}_eps{}_step{}.png".format(
-                                                        args.num_landmarks, eps, t)), title=f'return = {total_reward}',
-                                  legend=True)
-                else:
-                    env.save_plot(name=os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                                    "plots/test_landmarknum{}_eps{}_step{}.png".format(
-                                                        args.num_landmarks, eps, t)), title=f'return = {total_reward_}')
+            # if t == 0 or t == args.horizon / 3 - 1 or t == args.horizon * 2 / 3 - 1:
+            #     total_reward_ = format(total_reward, '.2f')
+            #     if t == 0:
+            #         env.save_plot(name=os.path.join(os.path.abspath(os.path.dirname(__file__)),
+            #                                         "plots/test_landmarknum{}_eps{}_step{}.png".format(
+            #                                             args.num_landmarks, eps, t)), title=f'return = {total_reward}',
+            #                       legend=True)
+            #     else:
+            #         env.save_plot(name=os.path.join(os.path.abspath(os.path.dirname(__file__)),
+            #                                         "plots/test_landmarknum{}_eps{}_step{}.png".format(
+            #                                             args.num_landmarks, eps, t)), title=f'return = {total_reward_}')
 
             # get action
             action, _state = agent.predict(obs, deterministic=True)
@@ -73,6 +74,13 @@ def test_agent(agent):
         # summary
         print("---")
         print(f"return = {total_reward}")
+        # if True:
+        #     if eps % 10 == 0:
+        #         data = ["\n" + str(np.round(total_reward, 3)) + "\n"]
+        #     else:
+        #         data = [str(np.round(total_reward, 3)) + "\n"]
+        #     for element in data:
+        #         my_open_results.write(element)
         reward_list.append(total_reward)
         total_reward_ = format(total_reward, '.2f')
         env.save_plot(name=os.path.join(os.path.abspath(os.path.dirname(__file__)),
@@ -80,11 +88,18 @@ def test_agent(agent):
                       title=f'return = {total_reward_}')
     env.close()
     print(f"mean and std of total return = {np.mean(reward_list), np.std(reward_list)}")
+    # my_open_results.close()
 
 
 if __name__ == '__main__':
     # load model
     if args.num_landmarks == 5:
+        # model = PPO.load(os.path.join(os.path.abspath(os.path.dirname(__file__)),
+        #                               "checkpoints/ppo_toy_active_mapping/default/landmark_5-seed_0-model_attention/best_model.zip"))
+        # model = PPO.load(os.path.join(os.path.abspath(os.path.dirname(__file__)),
+        #                               "checkpoints/ppo_toy_active_mapping/default/landmark_5-seed_10-model_attention/best_model.zip"))
+        # model = PPO.load(os.path.join(os.path.abspath(os.path.dirname(__file__)),
+        #                               "checkpoints/ppo_toy_active_mapping/default/landmark_5-seed_100-model_attention/best_model.zip"))
         model = PPO.load(os.path.join(os.path.abspath(os.path.dirname(__file__)),
                                       "checkpoints/ppo_toy_active_mapping/default/best_model.zip"))
     elif args.num_landmarks == 15:

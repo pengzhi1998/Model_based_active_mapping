@@ -141,10 +141,11 @@ class SimpleQuadrotor(gym.Env):
         # landmark and info_mat init
         self.info_mat = self.info_mat_init.copy()
         # an extremely large value which guarantee this landmark's position has much lower uncertainty
-        self.random_serial = np.random.randint(0, self.num_landmarks)
-        if self.special_case == True:
-            self.info_mat[self.random_serial * 2, self.random_serial * 2], \
-            self.info_mat[self.random_serial * 2 + 1, self.random_serial * 2 + 1] = 100, 100
+        # self.random_serial = np.random.randint(0, self.num_landmarks)
+
+        # if self.special_case == True:
+        #     self.info_mat[self.random_serial * 2, self.random_serial * 2], \
+        #     self.info_mat[self.random_serial * 2 + 1, self.random_serial * 2 + 1] = 25, 25
 
         if self.for_comparison == False:
             lx = np.random.uniform(low=-self.bound, high=self.bound, size=(self.num_landmarks, 1))
@@ -154,6 +155,19 @@ class SimpleQuadrotor(gym.Env):
         else:
             self.landmarks = np.array(init_agent_landmarks[0])
             self.agent_pos = np.array(init_agent_landmarks[1])
+
+        # if self.special_case == True:
+        #     self.random_serial = 2
+        #     self.info_mat[self.random_serial * 2, self.random_serial * 2], \
+        #     self.info_mat[self.random_serial * 2 + 1, self.random_serial * 2 + 1] = 5, 5
+        #     self.landmarks = np.array([[-3.735633361080981], [-5.389339529873403], [9.30832441039854], [-2.102614130995417], [1.7693017013749888],
+        #      [2.376171291827143], [3.1933682413882565], [-0.5026496918211603], [0.6641250783329653], [-0.5973562148846963]])
+        #     self.agent_pos = np.array([1.1351943561390905, -0.7867490956842902, 0.0])
+
+        # self.landmarks = np.array([[7.277112118464629], [-2.0788059438541246], [-7.649362880759338], [1.3084262371701794], [0.34758214308228297],
+        #  [-6.334403275718428], [-7.358637873096933], [-7.103044813132455], [4.337193623851874], [-0.23887438702090869]])
+        # self.agent_pos = np.array([-0.5775490486001775, 1.7617277810112522, 0.0])
+
         self.landmarks_estimate = self.landmarks + np.random.normal(0, STD, np.shape(self.landmarks))
         # self.agent_pos = np.array([0, 0, 0])
 
@@ -179,36 +193,44 @@ class SimpleQuadrotor(gym.Env):
     def _plot(self, legend, title='trajectory'):
 
         # plot agent trajectory
-        plt.tick_params(labelsize=11)
+        plt.tick_params(labelsize=15)
         history_poses = np.array(self.history_poses)
-        self.ax.plot(history_poses[:, 0], history_poses[:, 1], c='black', linewidth=2, label='agent trajectory')
+        self.ax.plot(history_poses[:, 0], history_poses[:, 1], c='black', linewidth=3, label='agent trajectory')
 
         # plot agent trajectory start & end
-        self.ax.scatter(history_poses[0, 0], history_poses[0, 1], marker='>', s=50, c='red', label="start")
-        self.ax.scatter(history_poses[-1, 0], history_poses[-1, 1], marker='s', s=50, c='red', label="end")
+        self.ax.scatter(history_poses[0, 0], history_poses[0, 1], marker='>', s=70, c='red', label="start")
+        self.ax.scatter(history_poses[-1, 0], history_poses[-1, 1], marker='s', s=70, c='red', label="end")
 
         # plot landmarks
-        self.ax.scatter(self.landmarks[list(range(0, self.num_landmarks*2, 2)), :],
-                        self.landmarks[list(range(1, self.num_landmarks*2+1, 2)), :], s=50, c='blue', label="landmark_0.5")
+        if self.special_case == False:
+            self.ax.scatter(self.landmarks[list(range(0, self.num_landmarks*2, 2)), :],
+                        self.landmarks[list(range(1, self.num_landmarks*2+1, 2)), :], s=50, c='blue', label="landmark")
         if self.special_case == True:
+            self.ax.scatter(self.landmarks[list(range(0, self.num_landmarks * 2, 2)), :],
+                            self.landmarks[list(range(1, self.num_landmarks * 2 + 1, 2)), :], s=50, c='blue',
+                            label="landmark_0.5")
             self.ax.scatter(self.landmarks[2 * self.random_serial, :],
                         self.landmarks[2 * self.random_serial + 1, :], s=50, c='green',
-                        label="landmark_100")
+                        label="landmark_25")
 
         # annotate theta value to each position point
         # for i in range(0, len(self.history_poses)-1):
         #     self.ax.annotate(round(self.history_actions[i][2], 4), history_poses[i, :2])
 
         # axes
-        self.ax.set_xlabel("x", fontdict={'size': 16})
-        self.ax.set_ylabel("y", fontdict={'size': 16})
+        self.ax.set_xlabel("x", fontdict={'size': 20})
+        self.ax.set_ylabel("y", fontdict={'size': 20})
 
         # title
         # self.ax.set_title(title, fontdict={'size': 16})
 
+        self.ax.set_facecolor('whitesmoke')
+        plt.grid(alpha=0.4)
         # legend
         if legend == True:
             self.ax.legend()
+            plt.legend(prop={'size': 14})
+
 
     def render(self, mode='human'):
         if mode == 'terminal':
@@ -233,7 +255,7 @@ class SimpleQuadrotor(gym.Env):
     def save_plot(self, name='default.png', title='trajectory', legend=False):
         self.ax.cla()
         self._plot(legend, title=title)
-        self.fig.savefig(name)
+        self.fig.savefig(name, bbox_inches = 'tight')
 
     def close (self):
         plt.close('all')
