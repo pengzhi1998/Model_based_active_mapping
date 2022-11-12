@@ -13,7 +13,7 @@ from utils import unicycle_dyn, diff_FoV_land
 STATE_DIM = 3
 RADIUS = 2
 STD_sensor = 0.5
-STD_motion = 0.2
+STD_motion = 0.05
 KAPPA = 0.5
 
 # time & step
@@ -105,8 +105,8 @@ class SimpleQuadrotor(gym.Env):
         # to get rid of incorporating the motion model into our RL policy model.
         # We also update the information matrix here.
         self.landmarks_estimate_pred = self.landmarks_estimate.flatten() + (self.B_mat * self.u_land).flatten()
-        # self.Q_mat = np.eye(self.num_landmarks * 2) * STD_motion ** 2
-        # next_info_mat = np.linalg.inv(np.linalg.inv(next_info_mat) + self.Q_mat)
+        self.Q_mat = np.eye(self.num_landmarks * 2) * STD_motion ** 2
+        next_info_mat = np.linalg.inv(np.linalg.inv(next_info_mat) + self.Q_mat)
 
         # terminate at time
         done = False
@@ -182,8 +182,8 @@ class SimpleQuadrotor(gym.Env):
         # landmarks' control motion for the initial time step, note it's varying over time
         self.B_mat = np.random.uniform(-1, 1, size=(self.num_landmarks * 2, 1))
         self.landmarks_estimate_pred = self.landmarks_estimate + self.B_mat * self.u_land
-        # self.Q_mat = np.eye(self.num_landmarks * 2) * STD_motion ** 2
-        # self.info_mat = np.linalg.inv(np.linalg.inv(self.info_mat) + self.Q_mat)
+        self.Q_mat = np.eye(self.num_landmarks * 2) * STD_motion ** 2
+        self.info_mat = np.linalg.inv(np.linalg.inv(self.info_mat) + self.Q_mat)
 
         # state init
         self.state = np.hstack([
