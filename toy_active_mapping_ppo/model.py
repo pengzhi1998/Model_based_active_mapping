@@ -28,7 +28,7 @@ class CustomNetwork(nn.Module):
 
         # IMPORTANT:
         # Save output dimensions, used to create the distributions
-        self.num_landmark = int((feature_dim - 2) / 4)
+        self.num_landmark = int((feature_dim - 2) / 5)
         self.latent_dim_pi = last_layer_dim_pi
         self.latent_dim_vf = last_layer_dim_vf
 
@@ -74,7 +74,7 @@ class CustomNetwork(nn.Module):
 
         # embeddings of landmarkss
         info_vector = observation[:, 2: 2 + 2 * self.num_landmark]
-        estimated_landmark_pos = observation[:, 2 + 2 * self.num_landmark:]
+        estimated_landmark_pos = observation[:, 2 + 2 * self.num_landmark: - self.num_landmark]
         landmark_info = torch.cat((estimated_landmark_pos.reshape(observation.size()[0], self.num_landmark, 2),
                                    info_vector.reshape(observation.size()[0], self.num_landmark, 2)), 2)
         landmark_embedding = self.relu(self.landmark_fc1_pi(landmark_info))
@@ -82,8 +82,13 @@ class CustomNetwork(nn.Module):
 
         # attention
         landmark_embedding_tr = torch.transpose(landmark_embedding, 1, 2)
-        att = self.softmax(torch.matmul(agent_pos_embedding.unsqueeze(1), landmark_embedding_tr)/4)
-        # print(agent_pos_embedding.unsqueeze(1), landmark_embedding_tr, att, "\n\n")
+
+        # mask
+        mask = observation[:, - self.num_landmark:].unsqueeze(1)
+        attention = torch.matmul(agent_pos_embedding.unsqueeze(1), landmark_embedding_tr) / 4
+        attention = attention.masked_fill(mask == 0, -1e10)
+
+        att = self.softmax(attention)
         landmark_embedding_att = self.relu((torch.matmul(att, torch.transpose(landmark_embedding_tr, 1, 2)).squeeze(1)))
 
         info_embedding = self.relu(self.info_fc1_pi(torch.cat((agent_pos_embedding, landmark_embedding_att), 1)))
@@ -98,7 +103,7 @@ class CustomNetwork(nn.Module):
 
         # embeddings of landmarkss
         info_vector = observation[:, 2: 2 + 2 * self.num_landmark]
-        estimated_landmark_pos = observation[:, 2 + 2 * self.num_landmark:]
+        estimated_landmark_pos = observation[:, 2 + 2 * self.num_landmark: - self.num_landmark]
         landmark_info = torch.cat((estimated_landmark_pos.reshape(observation.size()[0], self.num_landmark, 2),
                                    info_vector.reshape(observation.size()[0], self.num_landmark, 2)), 2)
         landmark_embedding = self.relu(self.landmark_fc1_vf(landmark_info))
@@ -106,7 +111,13 @@ class CustomNetwork(nn.Module):
 
         # attention
         landmark_embedding_tr = torch.transpose(landmark_embedding, 1, 2)
-        att = self.softmax(torch.matmul(agent_pos_embedding.unsqueeze(1), landmark_embedding_tr)/4)
+
+        # mask
+        mask = observation[:, - self.num_landmark:].unsqueeze(1)
+        attention = torch.matmul(agent_pos_embedding.unsqueeze(1), landmark_embedding_tr) / 4
+        attention = attention.masked_fill(mask == 0, -1e10)
+
+        att = self.softmax(attention)
         landmark_embedding_att = self.relu((torch.matmul(att, torch.transpose(landmark_embedding_tr, 1, 2)).squeeze(1)))
 
         info_embedding = self.relu(self.info_fc1_vf(torch.cat((agent_pos_embedding, landmark_embedding_att), 1)))

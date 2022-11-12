@@ -27,7 +27,7 @@ def exp_hat(u, dt):
 
 def unicycle_dyn(state,u,dt):
     T = state_to_T(state)
-    T_next = SE2_motion(T,u,dt)
+    T_next = SE2_motion(T,u,dt)  # TODO: considering to fix the y motion but give yaw motion a nonzero value
     state_next = T_to_state(T_next)
                  # + np.random.normal(0, .2, [3,])
     return state_next
@@ -89,7 +89,7 @@ def Gaussian_CDF(x, kap):
     return Psi, Psi_der
 
 def diff_FoV_land(x,y,n_y,r,kap,std):
-    V_jj_inv = np.zeros((2 * n_y, 2 * n_y)) 
+    V_jj_inv = np.zeros((2 * n_y, 2 * n_y))
     for j in range(n_y):
         q = x[:2] - y[j * 2: j * 2 + 2].T
         SDF, Grad = circle_SDF(q,r)
