@@ -11,10 +11,10 @@ from utils import unicycle_dyn, diff_FoV_land
 
 # env setting
 STATE_DIM = 3
-RADIUS = 2
-STD_sensor = 0.5
+RADIUS = 1
+STD_sensor = 0.15
 STD_motion = 0.01
-KAPPA = 0.5
+KAPPA = 0.4
 
 # time & step
 STEP_SIZE = 1
@@ -143,7 +143,7 @@ class SimpleQuadrotor(gym.Env):
     def reset(self, init_agent_landmarks=None):
         # landmark and info_mat init
         self.num_landmarks = np.random.randint(3, 8)  # randomized number for landmarks
-        # self.total_step = self.num_landmarks * 3
+        self.total_step = self.num_landmarks * 2 + 5
         self.padding = np.array([0.] * 2 * (self.max_num_landmarks - self.num_landmarks))
         self.mask = np.array([True] * self.num_landmarks + [False] * (self.max_num_landmarks - self.num_landmarks))
         self.info_mat_init = np.diag([.5] * self.num_landmarks * 2).astype(np.float32)
