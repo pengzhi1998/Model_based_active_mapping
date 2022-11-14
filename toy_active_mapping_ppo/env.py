@@ -16,6 +16,10 @@ STD_sensor = 0.15
 STD_motion = 0.01
 KAPPA = 0.4
 
+# another option
+# RADIUS = 2
+# KAPPA = 0.25
+
 # time & step
 STEP_SIZE = 1
 random.seed(100)
@@ -117,7 +121,7 @@ class SimpleQuadrotor(gym.Env):
         if self.for_comparison == False:
             info = {'info_mat': next_info_mat}
         else:
-            info = np.mean(np.abs(self.landmarks - self.landmarks_estimate))
+            info = np.mean(np.abs(self.landmarks.flatten() - self.landmarks_estimate))
 
         # update variables
         self.agent_pos = next_agent_pos
@@ -136,7 +140,7 @@ class SimpleQuadrotor(gym.Env):
 
         # record history poses
         self.history_poses.append(self.agent_pos)
-        # print(np.sum(np.abs(self.landmarks - self.landmarks_estimate)))
+        # print(np.sum(np.abs(self.landmarks.flatten() - self.landmarks_estimate)))
 
         return self.state, reward, done, info
 
