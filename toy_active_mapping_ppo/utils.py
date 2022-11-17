@@ -98,6 +98,17 @@ def diff_FoV_land(x,y,n_y,r,kap,std):
         V_jj_inv[2 * j + 1, 2 * j+1] = 1 / (std ** 2) * (1 - Phi)
     return V_jj_inv
 
+def diff_FoV_land_triangle(x,y,n_y,r,kap,std):
+    V_jj_inv = np.zeros((2 * n_y, 2 * n_y))
+    T_pose = state_to_T(x)
+    for j in range(n_y):
+        q = T_pose[:2, :2].transpose() @ (y[j * 2: j * 2 + 2] - T_pose[:2, 2])
+        SDF, Grad = triangle_SDF(q, np.pi/3, r)
+        Phi, Phi_der =  Gaussian_CDF(SDF, kap)
+        V_jj_inv[2 * j, 2 * j] = 1 / (std ** 2) * (1 - Phi)
+        V_jj_inv[2 * j + 1, 2 * j+1] = 1 / (std ** 2) * (1 - Phi)
+    return V_jj_inv
+
 # this squared SDF is borrowed from this great repo: https://github.com/fogleman/sdf.git
 def square_SDF(q, length=2):
     q_bound = np.abs(q) - length  # TODO: check whether to use square
@@ -114,16 +125,25 @@ def diff_FoV_land_square(x ,y ,n_y ,length ,kap ,std):
     return V_jj_inv
 
 if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-    density = 8
-    a = np.ones((density*8+1, density*8+1))
-    for i in np.linspace(-4, 4, density*8+1):
-        for j in np.linspace(-4, 4, density*8+1):
-            a[int((i+4)*density), int((j+4)*density)] = square_SDF(np.array([[i, j]]))
+    x = np.array([2, 1, np.pi/2])
+    y = np.array([2, 2])
+    T_pose = state_to_T(x)
+    q = T_pose[:2, :2].transpose() @ (y - T_pose[:2, 2])
+    print(q, triangle_SDF(q, np.pi/3, 0.7))
 
-    fig, ax = plt.subplots()
-    plt.imshow(a, cmap='gist_heat', extent=[-4,4,-4,4])
-    plt.show()
+
+
+
+    # import matplotlib.pyplot as plt
+    # density = 8
+    # a = np.ones((density*8+1, density*8+1))
+    # for i in np.linspace(-4, 4, density*8+1):
+    #     for j in np.linspace(-4, 4, density*8+1):
+    #         a[int((i+4)*density), int((j+4)*density)] = square_SDF(np.array([[i, j]]))
+    #
+    # fig, ax = plt.subplots()
+    # plt.imshow(a, cmap='gist_heat', extent=[-4,4,-4,4])
+    # plt.show()
 
     # test the SDF function's performance
     # print(Gaussian_CDF(.5, -.2))

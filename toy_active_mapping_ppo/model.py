@@ -28,7 +28,7 @@ class CustomNetwork(nn.Module):
 
         # IMPORTANT:
         # Save output dimensions, used to create the distributions
-        self.num_landmark = int((feature_dim - 2) / 5)
+        self.num_landmark = int((feature_dim - 3) / 5)
         self.latent_dim_pi = last_layer_dim_pi
         self.latent_dim_vf = last_layer_dim_vf
 
@@ -37,7 +37,7 @@ class CustomNetwork(nn.Module):
 
         )
 
-        self.agent_pos_fc1_pi = nn.Linear(2, 32)
+        self.agent_pos_fc1_pi = nn.Linear(3, 32)
         self.agent_pos_fc2_pi = nn.Linear(32, 32)
         self.landmark_fc1_pi = nn.Linear(4, 64)
         self.landmark_fc2_pi = nn.Linear(64, 32)
@@ -45,7 +45,7 @@ class CustomNetwork(nn.Module):
         self.action_fc1_pi = nn.Linear(64, self.latent_dim_pi)
 
         # value net
-        self.agent_pos_fc1_vf = nn.Linear(2, 32)
+        self.agent_pos_fc1_vf = nn.Linear(3, 32)
         self.agent_pos_fc2_vf = nn.Linear(32, 32)
         self.landmark_fc1_vf = nn.Linear(4, 64)
         self.landmark_fc2_vf = nn.Linear(64, 32)
@@ -69,12 +69,12 @@ class CustomNetwork(nn.Module):
     def forward_actor(self, observation: torch.Tensor) -> torch.Tensor:
         # compute the policy
         # embeddings of agent's position
-        agent_pos_embedding = self.relu(self.agent_pos_fc1_pi(observation[:, :2]))
+        agent_pos_embedding = self.relu(self.agent_pos_fc1_pi(observation[:, :3]))
         agent_pos_embedding = self.relu(self.agent_pos_fc2_pi(agent_pos_embedding))
 
         # embeddings of landmarkss
-        info_vector = observation[:, 2: 2 + 2 * self.num_landmark]
-        estimated_landmark_pos = observation[:, 2 + 2 * self.num_landmark: - self.num_landmark]
+        info_vector = observation[:, 3: 3 + 2 * self.num_landmark]
+        estimated_landmark_pos = observation[:, 3 + 2 * self.num_landmark: - self.num_landmark]
         landmark_info = torch.cat((estimated_landmark_pos.reshape(observation.size()[0], self.num_landmark, 2),
                                    info_vector.reshape(observation.size()[0], self.num_landmark, 2)), 2)
         landmark_embedding = self.relu(self.landmark_fc1_pi(landmark_info))
@@ -98,12 +98,12 @@ class CustomNetwork(nn.Module):
     def forward_critic(self, observation: torch.Tensor) -> torch.Tensor:
         # compute the value
         # embeddings of agent's position
-        agent_pos_embedding = self.relu(self.agent_pos_fc1_vf(observation[:, :2]))
+        agent_pos_embedding = self.relu(self.agent_pos_fc1_vf(observation[:, :3]))
         agent_pos_embedding = self.relu(self.agent_pos_fc2_vf(agent_pos_embedding))
 
         # embeddings of landmarkss
-        info_vector = observation[:, 2: 2 + 2 * self.num_landmark]
-        estimated_landmark_pos = observation[:, 2 + 2 * self.num_landmark: - self.num_landmark]
+        info_vector = observation[:, 3: 3 + 2 * self.num_landmark]
+        estimated_landmark_pos = observation[:, 3 + 2 * self.num_landmark: - self.num_landmark]
         landmark_info = torch.cat((estimated_landmark_pos.reshape(observation.size()[0], self.num_landmark, 2),
                                    info_vector.reshape(observation.size()[0], self.num_landmark, 2)), 2)
         landmark_embedding = self.relu(self.landmark_fc1_vf(landmark_info))
