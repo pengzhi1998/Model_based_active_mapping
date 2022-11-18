@@ -12,8 +12,8 @@ from utils import unicycle_dyn, diff_FoV_land
 # env setting
 STATE_DIM = 3
 RADIUS = 1
-STD_sensor = 0.15
-STD_motion = 0.01
+STD_sensor = 0.2
+STD_motion = 0.05
 KAPPA = 0.4
 
 # another option
@@ -73,7 +73,7 @@ class SimpleQuadrotor(gym.Env):
         # landmark dynamics, we store the ground truth landmark positions into "self.landmarks",
         # using the same parameters (self.B_mat, self.u_land) for predicting estimated landmark
         # positions (self.landmarks_estimate_pred) in the previous loop.
-        self.landmarks += self.B_mat * self.u_land + np.random.normal(0, STD_motion, np.shape(self.landmarks))
+        self.landmarks = self.A_mat @ self.landmarks + self.B_mat @ self.u_land + np.random.normal(0, STD_motion, np.shape(self.landmarks))
 
         sensor_value = np.zeros([self.num_landmarks * 2])
         # landmarks estimation with sensor
@@ -103,14 +103,14 @@ class SimpleQuadrotor(gym.Env):
         Prediction: x^_k = A * x^_{k-1} + B_{k-1} * u
         while w is the gaussian noise with STD which is unknown by the agent.
         '''
-        self.B_mat = np.random.uniform(-1, 1, size=(self.num_landmarks * 2, 1))
+        self.u_land = np.random.uniform(-1, 1, size=(self.num_landmarks * 2, 1))
 
         # Estimated landmark positions (x^_{k+1}) after moving for the next time step, which is used as an observation
         # to get rid of incorporating the motion model into our RL policy model.
         # We also update the information matrix here.
-        self.landmarks_estimate_pred = self.landmarks_estimate.flatten() + (self.B_mat * self.u_land).flatten()
+        self.landmarks_estimate_pred = self.A_mat @ self.landmarks_estimate.flatten() + (self.B_mat @ self.u_land).flatten()
         self.Q_mat = np.eye(self.num_landmarks * 2) * STD_motion ** 2
-        next_info_mat = np.linalg.inv(np.linalg.inv(next_info_mat) + self.Q_mat)
+        next_info_mat = np.linalg.inv(self.A_mat @ np.linalg.inv(next_info_mat) @ self.A_mat + self.Q_mat)
 
         # terminate at time
         done = False
@@ -183,12 +183,14 @@ class SimpleQuadrotor(gym.Env):
         self.landmarks_estimate = self.landmarks + np.random.normal(0, STD_sensor, np.shape(self.landmarks))
 
         # landmarks control vector
-        self.u_land = np.array([1])
         # landmarks' control motion for the initial time step, note it's varying over time
-        self.B_mat = np.random.uniform(-1, 1, size=(self.num_landmarks * 2, 1))
-        self.landmarks_estimate_pred = self.landmarks_estimate + self.B_mat * self.u_land
+        self.A_mat = np.eye(self.num_landmarks * 2)
+        self.u_land = np.random.uniform(-1, 1, size=(self.num_landmarks * 2, 1))
+        self.B_mat = np.eye(self.num_landmarks * 2)
+
+        self.landmarks_estimate_pred = self.A_mat @ self.landmarks_estimate + self.B_mat @ self.u_land
         self.Q_mat = np.eye(self.num_landmarks * 2) * STD_motion ** 2
-        self.info_mat = np.linalg.inv(np.linalg.inv(self.info_mat) + self.Q_mat)
+        self.info_mat = np.linalg.inv(self.A_mat @ np.linalg.inv(self.info_mat) @ self.A_mat + self.Q_mat)
 
         # state init
         self.state = np.hstack([
