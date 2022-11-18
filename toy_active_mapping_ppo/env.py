@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from numpy.linalg import slogdet
 from gym import spaces
 from stable_baselines3.common.env_checker import check_env
-from utils import unicycle_dyn, diff_FoV_land
+from toy_active_mapping_ppo.utils import unicycle_dyn, diff_FoV_land
 
 # env setting
 STATE_DIM = 3

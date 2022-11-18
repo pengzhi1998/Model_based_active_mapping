@@ -1,0 +1,19 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+gym = "==0.21.0"
+numpy = "*"
+scipy = "*"
+matplotlib = "*"
+opencv-python = "*"
+stable-baselines3 = "==1.6.0"
+tensorboard = "*"
+protobuf = "~=3.19.0"
+
+[requires]
+python_version = "3.7"
+
+[dev-packages]

@@ -3,7 +3,7 @@ import sys
 import os
 import torch
 import numpy as np
-from model import CustomActorCriticPolicy
+from toy_active_mapping_ppo.model import CustomActorCriticPolicy
 from gym.envs.registration import register
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
