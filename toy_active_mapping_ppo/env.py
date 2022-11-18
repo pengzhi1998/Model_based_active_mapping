@@ -95,7 +95,9 @@ class SimpleQuadrotor(gym.Env):
         V_jj_inv = diff_FoV_land(next_agent_pos, self.landmarks_estimate, self.num_landmarks, RADIUS, KAPPA,
                                  STD_sensor).astype(np.float32)
         next_info_mat = self.info_mat + H_mat.transpose() @ V_jj_inv @ H_mat  # update info
-        reward = float(slogdet(next_info_mat)[1] - slogdet(self.info_mat)[1])
+        reward = float(slogdet(next_info_mat)[1] - slogdet(self.info_mat_update)[1])
+
+        self.info_mat_update = next_info_mat
 
         '''To make the landmarks better controllable, I picked time-variant B_mat values from a uniform distribution.
         At the same time, this motion model is known to the agent so it wouldn't affect the Kalman filter
@@ -152,6 +154,7 @@ class SimpleQuadrotor(gym.Env):
         self.mask = np.array([True] * self.num_landmarks + [False] * (self.max_num_landmarks - self.num_landmarks))
         self.info_mat_init = np.diag([.5] * self.num_landmarks * 2).astype(np.float32)
         self.info_mat = self.info_mat_init.copy()
+        self.info_mat_update = self.info_mat
         # an extremely large value which guarantee this landmark's position has much lower uncertainty
         # self.random_serial = np.random.randint(0, self.num_landmarks)
 
