@@ -12,8 +12,8 @@ from utils import unicycle_dyn, diff_FoV_land, diff_FoV_land_triangle, triangle_
 # env setting
 STATE_DIM = 3
 RADIUS = 2
-STD_sensor = 0.15
-STD_motion = 0.01
+STD_sensor = 0.2
+STD_motion = 0.05
 KAPPA = 0.4
 
 # another option
@@ -84,7 +84,7 @@ class SimpleQuadrotor(gym.Env):
         # landmark dynamics, we store the ground truth landmark positions into "self.landmarks",
         # using the same parameters (self.B_mat, self.u_land) for predicting estimated landmark
         # positions (self.landmarks_estimate_pred) in the previous loop.
-        self.landmarks += self.B_mat * self.u_land + np.random.normal(0, STD_motion, np.shape(self.landmarks))
+        self.landmarks = self.A_mat @ self.landmarks + self.B_mat @ self.u_land + np.random.normal(0, STD_motion, np.shape(self.landmarks))
 
         sensor_value = np.zeros([self.num_landmarks * 2])
         # landmarks estimation with sensor
@@ -102,7 +102,7 @@ class SimpleQuadrotor(gym.Env):
         H_mat = np.eye(self.num_landmarks * 2)  # sensor matrix, I set it to be an identity matrix
         R_mat = np.eye(self.num_landmarks * 2) * STD_sensor ** 2  # sensor uncertainty covariance matrix
         S_mat = H_mat @ np.linalg.inv(self.info_mat) @ H_mat.transpose() + R_mat
-        kalman_gain = np.linalg.inv(self.info_mat) @ H_mat @ np.linalg.inv(S_mat)
+        kalman_gain = np.linalg.inv(self.info_mat) @ H_mat.transpose() @ np.linalg.inv(S_mat)
 
         self.landmarks_estimate = self.landmarks_estimate_pred.flatten() + (kalman_gain @ (sensor_value - (H_mat @ self.landmarks_estimate_pred).flatten())).flatten()
 
@@ -110,22 +110,25 @@ class SimpleQuadrotor(gym.Env):
         V_jj_inv = diff_FoV_land_triangle(next_agent_pos, self.landmarks_estimate, self.num_landmarks, RADIUS, KAPPA,
                                  STD_sensor).astype(np.float32)
         next_info_mat = self.info_mat + H_mat.transpose() @ V_jj_inv @ H_mat  # update info
-        reward = float(slogdet(next_info_mat)[1] - slogdet(self.info_mat)[1])
+        reward = float(slogdet(next_info_mat)[1] - slogdet(self.info_mat_update)[1])  # slogdet(Y_{k+1}) - slogdet(Y_k) for model-free stage-wise reward
+        self.info_mat_update = next_info_mat
 
-        '''To make the landmarks better controllable, I picked time-variant B_mat values from a uniform distribution.
-        At the same time, this motion model is known to the agent so it wouldn't affect the Kalman filter
-        Real landmark motion model: x_k = A * x_{k-1} + B_{k-1} * u + w
-        Prediction: x^_k = A * x^_{k-1} + B_{k-1} * u
-        while w is the gaussian noise with STD which is unknown by the agent.
         '''
-        self.B_mat = np.random.uniform(-1, 1, size=(self.num_landmarks * 2, 1))
+        Next landmark pos trick:
+        To make the landmarks better controllable, I picked time-variant u_land values from a uniform distribution.
+        At the same time, this motion model is known to the agent so it wouldn't affect the Kalman filter
+        Real landmark motion model: x_{k+1} = A @ x_k + B @ u_k + w
+        Prediction: x^_{k+1} = A @ x^_k + B @ u_k
+        while w is the gaussian noise with STD_motion which is unknown by the agent.
+        '''
+        self.u_land = np.random.uniform(-1, 1, size=(self.num_landmarks * 2, 1))
 
         # Estimated landmark positions (x^_{k+1}) after moving for the next time step, which is used as an observation
         # to get rid of incorporating the motion model into our RL policy model.
         # We also update the information matrix here.
-        self.landmarks_estimate_pred = self.landmarks_estimate.flatten() + (self.B_mat * self.u_land).flatten()
+        self.landmarks_estimate_pred = self.A_mat @ self.landmarks_estimate.flatten() + (self.B_mat @ self.u_land).flatten()
         self.Q_mat = np.eye(self.num_landmarks * 2) * STD_motion ** 2
-        next_info_mat = np.linalg.inv(np.linalg.inv(next_info_mat) + self.Q_mat)
+        next_info_mat = np.linalg.inv(self.A_mat @ np.linalg.inv(next_info_mat) @ self.A_mat.T + self.Q_mat)
 
         # terminate at time
         done = False
@@ -167,6 +170,7 @@ class SimpleQuadrotor(gym.Env):
         self.mask = np.array([True] * self.num_landmarks + [False] * (self.max_num_landmarks - self.num_landmarks))
         self.info_mat_init = np.diag([.5] * self.num_landmarks * 2).astype(np.float32)
         self.info_mat = self.info_mat_init.copy()
+        self.info_mat_update = self.info_mat
         # an extremely large value which guarantee this landmark's position has much lower uncertainty
         # self.random_serial = np.random.randint(0, self.num_landmarks)
 
@@ -179,7 +183,7 @@ class SimpleQuadrotor(gym.Env):
             lx = np.random.uniform(low=-self.bound, high=self.bound, size=(self.num_landmarks, 1))
             ly = np.random.uniform(low=-self.bound, high=self.bound, size=(self.num_landmarks, 1))
             self.landmarks = np.concatenate((lx, ly), 1).reshape(self.num_landmarks*2, 1)
-            self.agent_pos = np.array([random.uniform(-self.bound, self.bound), random.uniform(-self.bound, self.bound), random.uniform(-np.pi, np.pi)])
+            self.agent_pos = np.array([random.uniform(-2, 2), random.uniform(-2, 2), random.uniform(-np.pi, np.pi)])
         else:
             self.landmarks = np.array(init_agent_landmarks[0])
             self.agent_pos = np.array(init_agent_landmarks[1])
@@ -199,12 +203,14 @@ class SimpleQuadrotor(gym.Env):
         self.landmarks_estimate = self.landmarks + np.random.normal(0, STD_sensor, np.shape(self.landmarks))
 
         # landmarks control vector
-        self.u_land = np.array([1])
         # landmarks' control motion for the initial time step, note it's varying over time
-        self.B_mat = np.random.uniform(-1, 1, size=(self.num_landmarks * 2, 1))
-        self.landmarks_estimate_pred = self.landmarks_estimate + self.B_mat * self.u_land
+        self.A_mat = np.eye(self.num_landmarks * 2)
+        self.u_land = np.random.uniform(-1, 1, size=(self.num_landmarks * 2, 1))
+        self.B_mat = np.eye(self.num_landmarks * 2)
+
+        self.landmarks_estimate_pred = self.A_mat @ self.landmarks_estimate + self.B_mat @ self.u_land
         self.Q_mat = np.eye(self.num_landmarks * 2) * STD_motion ** 2
-        self.info_mat = np.linalg.inv(np.linalg.inv(self.info_mat) + self.Q_mat)
+        self.info_mat = np.linalg.inv(self.A_mat @ np.linalg.inv(self.info_mat) @ self.A_mat.T + self.Q_mat)
 
         # state init
         self.state = np.hstack([
