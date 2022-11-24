@@ -28,7 +28,8 @@ np.random.seed(100)
 class SimpleQuadrotor(gym.Env):
     metadata = {'render.modes': ['human', 'terminal']}
 
-    def __init__(self, bound, num_landmarks, horizon, SE3_control=True, for_comparison=False, special_case=False, test=False):
+    def __init__(self, bound, num_landmarks, horizon, SE3_control=True, motion_model=1,
+                 for_comparison=False, special_case=False, test=False):
         super(SimpleQuadrotor, self).__init__()
 
         # variables
@@ -54,6 +55,7 @@ class SimpleQuadrotor(gym.Env):
         self.info_mat = self.info_mat_init.copy()
 
         self.SE3_control = SE3_control
+        self.motion_model = motion_model
         self.for_comparison = for_comparison
         self.special_case = special_case
 
@@ -133,7 +135,7 @@ class SimpleQuadrotor(gym.Env):
         Prediction: x^_{k+1} = A @ x^_k + B @ u_k
         while w is the gaussian noise with STD_motion which is unknown by the agent.
         '''
-        self.u_land = np.random.uniform(-1, 1, size=(self.num_landmarks * 2, 1))
+        self.u_land = np.random.uniform(-1, 1, size=(self.num_landmarks * 2, 1)) + self.U
 
         # Estimated landmark positions (x^_{k+1}) after moving for the next time step, which is used as an observation
         # to get rid of incorporating the motion model into our RL policy model.
@@ -196,6 +198,13 @@ class SimpleQuadrotor(gym.Env):
             ly = np.random.uniform(low=-self.bound, high=self.bound, size=(self.num_landmarks, 1))
             self.landmarks = np.concatenate((lx, ly), 1).reshape(self.num_landmarks*2, 1)
             self.agent_pos = np.array([random.uniform(-self.bound-2, self.bound+2), random.uniform(-self.bound-2, self.bound+2), random.uniform(-np.pi, np.pi)])
+            if self.motion_model == 1:
+                self.U = np.zeros((self.num_landmarks * 2, 1))
+            elif self.motion_model == 2:
+                # in this case, all landmarks move in one similar direction with Gaussian motion noise
+                self.U = np.array(np.random.uniform(-.8, .8, size=(2, )).tolist()
+                                  * self.num_landmarks).reshape(self.num_landmarks * 2, 1)
+
         else:
             self.landmarks = np.array(init_agent_landmarks[0])
             self.agent_pos = np.array(init_agent_landmarks[1])
@@ -217,7 +226,7 @@ class SimpleQuadrotor(gym.Env):
         # landmarks control vector
         # landmarks' control motion for the initial time step, note it's varying over time
         self.A_mat = np.eye(self.num_landmarks * 2)
-        self.u_land = np.random.uniform(-1, 1, size=(self.num_landmarks * 2, 1))
+        self.u_land = np.random.uniform(-1, 1, size=(self.num_landmarks * 2, 1)) + self.U
         self.B_mat = np.eye(self.num_landmarks * 2)
 
         self.landmarks_estimate_pred = self.A_mat @ self.landmarks_estimate + self.B_mat @ self.u_land
