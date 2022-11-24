@@ -28,7 +28,7 @@ np.random.seed(100)
 class SimpleQuadrotor(gym.Env):
     metadata = {'render.modes': ['human', 'terminal']}
 
-    def __init__(self, bound, num_landmarks, horizon, for_comparison=False, special_case=False, test=False):
+    def __init__(self, bound, num_landmarks, horizon, SE3_control=True, for_comparison=False, special_case=False, test=False):
         super(SimpleQuadrotor, self).__init__()
 
         # variables
@@ -53,32 +53,44 @@ class SimpleQuadrotor(gym.Env):
         self.info_mat_init = np.diag([.5] * self.num_landmarks * 2).astype(np.float32)
         self.info_mat = self.info_mat_init.copy()
 
+        self.SE3_control = SE3_control
         self.for_comparison = for_comparison
         self.special_case = special_case
 
     def step(self, action):
         self.current_step += 1
 
-        # rescale actions
-        action[0] *= 3
-        action[1] *= 3
-        action[2] = 0
-        # action[0] = 3
-        # action[2] = np.pi/3
+        if self.SE3_control:
+            # rescale actions
+            action[0] = (action[0] + 1) * 2
+            action[1] = 0
+            action[2] *= np.pi/3
 
-        # record history action
-        self.history_actions.append(action.copy())
+            # record history action
+            self.history_actions.append(action.copy())
 
-        # robot dynamics (precise x, y positions, we don't incorporate noise for robot's state or motion)
-        # next_agent_pos = unicycle_dyn(self.agent_pos, action, self.step_size).astype(np.float32)
-        next_agent_pos_xy = (self.agent_pos[:2] + action[:2]).tolist()
+            # robot dynamics (precise x, y positions, we don't incorporate noise for robot's state or motion)
+            next_agent_pos = unicycle_dyn(self.agent_pos, action, self.step_size).astype(np.float32)
 
-        _Norm = np.linalg.norm(action[:2]) * np.linalg.norm(self.x_pos)
-        rho = np.rad2deg(np.arcsin(np.cross(action[:2], self.x_pos) / _Norm))
-        alpha = np.arccos(np.dot(action[:2], self.x_pos) / _Norm)
-        if rho > 0:
-            alpha = - alpha
-        next_agent_pos = np.array(next_agent_pos_xy + [alpha])
+        else:
+            # rescale actions
+            action[0] *= 3
+            action[1] *= 3
+            action[2] = 0
+
+            # record history action
+            self.history_actions.append(action.copy())
+
+            # robot dynamics (precise x, y positions, we don't incorporate noise for robot's state or motion)
+            # next_agent_pos = unicycle_dyn(self.agent_pos, action, self.step_size).astype(np.float32)
+            next_agent_pos_xy = (self.agent_pos[:2] + action[:2]).tolist()
+
+            _Norm = np.linalg.norm(action[:2]) * np.linalg.norm(self.x_pos)
+            rho = np.rad2deg(np.arcsin(np.cross(action[:2], self.x_pos) / _Norm))
+            alpha = np.arccos(np.dot(action[:2], self.x_pos) / _Norm)
+            if rho > 0:
+                alpha = - alpha
+            next_agent_pos = np.array(next_agent_pos_xy + [alpha])
 
 
         # landmark dynamics, we store the ground truth landmark positions into "self.landmarks",
@@ -183,7 +195,7 @@ class SimpleQuadrotor(gym.Env):
             lx = np.random.uniform(low=-self.bound, high=self.bound, size=(self.num_landmarks, 1))
             ly = np.random.uniform(low=-self.bound, high=self.bound, size=(self.num_landmarks, 1))
             self.landmarks = np.concatenate((lx, ly), 1).reshape(self.num_landmarks*2, 1)
-            self.agent_pos = np.array([random.uniform(-2, 2), random.uniform(-2, 2), random.uniform(-np.pi, np.pi)])
+            self.agent_pos = np.array([random.uniform(-self.bound-2, self.bound+2), random.uniform(-self.bound-2, self.bound+2), random.uniform(-np.pi, np.pi)])
         else:
             self.landmarks = np.array(init_agent_landmarks[0])
             self.agent_pos = np.array(init_agent_landmarks[1])
