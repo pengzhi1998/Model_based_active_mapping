@@ -12,6 +12,7 @@ opencv-python = "*"
 stable-baselines3 = "==1.6.0"
 tensorboard = "*"
 protobuf = "~=3.19.0"
+pyyaml = "*"
 
 [requires]
 python_version = "3.7"

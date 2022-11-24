@@ -1,0 +1,31 @@
+num_landmarks: 5
+horizon: 10
+env_width: 5
+env_height: 10
+tau: 1.0
+
+motion:
+  A:
+    _1: 1
+    _2: 1
+  B:
+    _1: 1
+    _2: 1
+  W:
+    _1: 0.1
+    _2: 0.1
+  landmark_motion_scale: 0.0
+
+init_info: 0.001
+
+FoV:
+  radius: 5
+  psi: 1.0471975511965976
+  kappa: 0.5
+  V:
+    _1: 1.5
+    _2: 1.5
+
+lr: 0.001
+max_epoch: 1000
+num_test_trials: 10

@@ -1,4 +1,6 @@
 import torch
+import cv2
+import numpy as np
 
 from typing import Tuple
 from torch import tensor
@@ -35,10 +37,11 @@ class SimpleEnv:
         self._x = x
         self._step_num = 0
 
-        return mu, v, x
+        return mu, v, x, False
 
     def step(self, action: tensor) -> Tuple[tensor, tensor, tensor, bool]:
-        self._x = torch.clip(SE2_kinematics(self._x, action, self._tau), min=torch.zeros(2), max=self._env_size)
+        self._x = SE2_kinematics(self._x, action, self._tau)
+        # self._x[:2] = torch.clip(self._x[:2], min=torch.zeros(2), max=self._env_size)
 
         self._mu = torch.clip(landmark_motion(self._mu, self._v, self._A, self._B),
                               min=torch.zeros(2), max=self._env_size)
@@ -51,3 +54,29 @@ class SimpleEnv:
             done = True
 
         return self._mu, self._v, self._x, done
+
+    def render(self):
+        render_size = 50
+        arrow_length = 20
+        canvas = 255 * np.ones((self._env_size[1] * render_size, self._env_size[0] * render_size), dtype=np.uint8)
+        canvas = cv2.cvtColor(canvas, cv2.COLOR_GRAY2RGB)
+
+        # cv2.circle(canvas, (0, int(self._env_size[1] / 4 * render_size)), 10, (255, 0, 0), -1)
+
+        for landmark_pos in self._mu:
+            cv2.circle(canvas, (int(landmark_pos[0] * render_size), int(landmark_pos[1] * render_size)), 10,
+                       (255, 0, 0), -1)
+
+        robot_pose = self._x.detach().numpy()
+        # robot_pose = np.array([1, 4, np.pi * 0.5])
+
+        cv2.circle(canvas, (int(robot_pose[0] * render_size), int(robot_pose[1] * render_size)), 10, (0, 0, 255), -1)
+        canvas = cv2.arrowedLine(canvas, (int(robot_pose[0] * render_size), int(robot_pose[1] * render_size)),
+                                 (int(robot_pose[0] * render_size + arrow_length * np.cos(robot_pose[2])),
+                                  int(robot_pose[1] * render_size + arrow_length * np.sin(robot_pose[2]))),
+                                 (0, 0, 255), 2, tipLength=0.5)
+
+        cv2.namedWindow('map', cv2.WINDOW_GUI_NORMAL)
+        cv2.imshow('map', canvas)
+        # cv2.resizeWindow('map', *render_size)
+        cv2.waitKey(100)
