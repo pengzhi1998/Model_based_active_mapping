@@ -97,4 +97,4 @@ def get_transformation(x: tensor) -> tensor:
 
 
 def phi(SDF: tensor, kappa: float) -> tensor:
-    return 0.5 * (1 + torch.erf(SDF / (2 * kappa) - 2))
+    return 0.5 * (1 + torch.erf(SDF / (2**0.5 * kappa) - 2))

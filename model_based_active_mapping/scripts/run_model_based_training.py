@@ -45,6 +45,7 @@ def run_model_based_training(params_filename):
 
     lr = params['lr']
     max_epoch = params['max_epoch']
+    batch_size = params['batch_size']
     num_test_trials = params['num_test_trials']
 
     env = SimpleEnv(num_landmarks=num_landmarks, horizon=horizon, width=env_width, height=env_height, tau=tau,
@@ -52,36 +53,46 @@ def run_model_based_training(params_filename):
     agent = ModelBasedAgent(num_landmarks=num_landmarks, init_info=init_info, A=A, B=B, W=W,
                             radius=radius, psi=psi, kappa=kappa, V=V, lr=lr)
 
-    reward_list = np.empty(max_epoch)
-    action_list = np.empty((max_epoch, horizon, 2))
+    agent.train_policy()
+    reward_list = np.empty(max_epoch * batch_size)
+    action_list = np.empty((max_epoch * batch_size, horizon, 2))
     for i in range(max_epoch):
-        mu, v, x, done = env.reset()
-        agent.reset_agent_info()
-        step = 0
-        while not done:
-            action = agent.plan(mu, v, x)
-            action_list[i, step, :] = action.detach().numpy()
-            mu, v, x, done = env.step(action)
-            agent.update_info(mu, x)
-            step += 1
+        agent.set_policy_grad_to_zero()
 
-        reward_list[i] = agent.update_policy(debug=False) / num_landmarks
-        print('Normalized reward at iteration {}: {}'.format(i, reward_list[i]))
+        for j in range(batch_size):
+            mu, v, x, done = env.reset()
+            agent.reset_agent_info()
+            step = 0
+            while not done:
+                action = agent.plan(mu, v, x)
+                action_list[i * batch_size + j, step, :] = action.detach().numpy()
+                mu, v, x, done = env.step(action)
+                agent.update_info(mu, x)
+                step += 1
+
+            # reward_list[i * batch_size + j] = agent.update_policy_grad() / num_landmarks
+            reward_list[i * batch_size + j] = agent.update_policy_grad(mu, x) / num_landmarks
+
+        agent.policy_step(debug=True)
+
+        print('Epoch {} finished!'.format(i + 1))
+        print('Normalized average reward at epoch {}: {}'.format(i, np.mean(reward_list[(i * batch_size):
+                                                                                        ((i + 1) * batch_size)])))
 
     plt.figure()
     plt.plot(reward_list)
-    plt.xlabel("Epoch")
+    plt.xlabel("Episode")
     plt.ylabel("Normalized Reward")
     plt.show()
 
     plt.figure()
-    plt.plot(np.mean(action_list[:, :, 0], axis=0), 'b-', label='Linear Velocity')
-    plt.plot(np.mean(action_list[:, :, 0], axis=0) + 5 * np.std(action_list[:, :, 0], axis=0), 'b--')
-    plt.plot(np.mean(action_list[:, :, 0], axis=0) - 5 * np.std(action_list[:, :, 0], axis=0), 'b--')
+    plt.plot(np.mean(action_list[:, :, 0], axis=1), 'b-', label='Linear Velocity')
+    plt.plot(np.mean(action_list[:, :, 0], axis=1) + 5 * np.std(action_list[:, :, 0], axis=1), 'b--')
+    plt.plot(np.mean(action_list[:, :, 0], axis=1) - 5 * np.std(action_list[:, :, 0], axis=1), 'b--')
 
-    plt.plot(np.mean(action_list[:, :, 1], axis=0), 'r-', label='Angular Velocity')
-    plt.plot(np.mean(action_list[:, :, 1], axis=0) + 5 * np.std(action_list[:, :, 1], axis=0), 'r--')
-    plt.plot(np.mean(action_list[:, :, 1], axis=0) - 5 * np.std(action_list[:, :, 1], axis=0), 'r--')
+    plt.plot(np.mean(action_list[:, :, 1], axis=1), 'r-', label='Angular Velocity')
+    plt.plot(np.mean(action_list[:, :, 1], axis=1) + 5 * np.std(action_list[:, :, 1], axis=1), 'r--')
+    plt.plot(np.mean(action_list[:, :, 1], axis=1) - 5 * np.std(action_list[:, :, 1], axis=1), 'r--')
 
     plt.legend(loc="upper right")
     plt.xlabel("Epoch")
