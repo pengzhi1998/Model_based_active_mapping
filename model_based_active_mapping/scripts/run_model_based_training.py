@@ -54,7 +54,7 @@ def run_model_based_training(params_filename):
                             radius=radius, psi=psi, kappa=kappa, V=V, lr=lr)
 
     agent.train_policy()
-    reward_list = np.empty(max_epoch * batch_size)
+    reward_list = np.empty((max_epoch, batch_size))
     action_list = np.empty((max_epoch * batch_size, horizon, 2))
     for i in range(max_epoch):
         agent.set_policy_grad_to_zero()
@@ -67,22 +67,24 @@ def run_model_based_training(params_filename):
                 action = agent.plan(mu, v, x)
                 action_list[i * batch_size + j, step, :] = action.detach().numpy()
                 mu, v, x, done = env.step(action)
-                agent.update_info(mu, x)
+                # agent.update_info(mu, x)
                 step += 1
 
             # reward_list[i * batch_size + j] = agent.update_policy_grad() / num_landmarks
-            reward_list[i * batch_size + j] = agent.update_policy_grad(mu, x) / num_landmarks
+            reward_list[i, j] = agent.update_policy_grad(mu, x) / num_landmarks
 
-        agent.policy_step(debug=True)
+        agent.policy_step(debug=False)
 
         print('Epoch {} finished!'.format(i + 1))
-        print('Normalized average reward at epoch {}: {}'.format(i, np.mean(reward_list[(i * batch_size):
-                                                                                        ((i + 1) * batch_size)])))
+        print('Normalized average reward at epoch {}: {}'.format(i, np.mean(reward_list[i])))
+        print('Normalized median reward at epoch {}: {}'.format(i, np.median(reward_list[i])))
 
     plt.figure()
-    plt.plot(reward_list)
-    plt.xlabel("Episode")
+    plt.plot(np.mean(reward_list, axis=1), 'b-', label='Average')
+    plt.plot(np.median(reward_list, axis=1), 'r--', label='Median')
+    plt.xlabel("Epoch")
     plt.ylabel("Normalized Reward")
+    plt.legend(loc="upper right")
     plt.show()
 
     plt.figure()

@@ -22,9 +22,10 @@ class PolicyNet(nn.Module):
         # self.mixer_fc = nn.Sequential(*[nn.Linear(3 * 32, 32), self.relu])
         # self.pi_fc = nn.Sequential(*[nn.Linear(32, policy_dim), self.tanh])
 
-        self.fc_1 = nn.Sequential(*[nn.Linear(input_dim, 64), self.relu])
-        self.fc_2 = nn.Sequential(*[nn.Linear(64, 64), self.relu])
-        self.pi_fc = nn.Sequential(*[nn.Linear(64, policy_dim), self.tanh])
+        self.fc_1 = nn.Sequential(*[nn.Linear(input_dim, 32), self.relu])
+        self.fc_2 = nn.Sequential(*[nn.Linear(32, 64), self.relu])
+        self.fc_3 = nn.Sequential(*[nn.Linear(64, 32), self.relu])
+        self.pi_fc = nn.Sequential(*[nn.Linear(32, policy_dim), self.tanh])
 
     def forward(self, observation: torch.Tensor) -> torch.Tensor:
         if len(observation.size()) == 1:
@@ -36,11 +37,11 @@ class PolicyNet(nn.Module):
 
         # action = self.pi_fc(self.mixer_fc(mixer_input))
 
-        action = self.pi_fc(self.fc_2(self.fc_1(observation)))
+        action = self.pi_fc(self.fc_3(self.fc_2(self.fc_1(observation))))
 
         if action.size()[0] == 1:
             action = action.flatten()
 
-        scaled_action = torch.hstack((action[0] * 0.2, action[1] * 0.05))
+        scaled_action = torch.hstack(((1 + action[0]) / 2 * 1.0, action[1] * 0.1))
 
         return scaled_action

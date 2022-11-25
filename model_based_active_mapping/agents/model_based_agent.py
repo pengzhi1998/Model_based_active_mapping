@@ -1,6 +1,6 @@
 import torch
 
-from torch.optim import SGD
+from torch.optim import SGD, Adam
 from model_based_active_mapping.models.policy_net import PolicyNet
 from model_based_active_mapping.utilities.utils import landmark_motion, triangle_SDF, get_transformation, phi
 
@@ -21,10 +21,10 @@ class ModelBasedAgent:
         self._inv_V = V ** (-1)
 
         # input_dim = num_landmarks * 4 + 3
-        input_dim = num_landmarks * 4
+        input_dim = num_landmarks * 2
         self._policy = PolicyNet(input_dim=input_dim)
 
-        self._policy_optimizer = SGD(self._policy.parameters(), lr=lr)
+        self._policy_optimizer = Adam(self._policy.parameters(), lr=lr)
 
     def reset_agent_info(self):
         self._info = self._init_info * torch.ones((self._num_landmarks, 2))
@@ -43,7 +43,8 @@ class ModelBasedAgent:
 
         # net_input = torch.hstack((x, self._info.flatten(), next_mu.flatten()))
 
-        net_input = torch.hstack((self._info.flatten(), q.flatten()))
+        # net_input = torch.hstack((self._info.flatten(), q.flatten()))
+        net_input = q.flatten()
         action = self._policy.forward(net_input)
         return action
 

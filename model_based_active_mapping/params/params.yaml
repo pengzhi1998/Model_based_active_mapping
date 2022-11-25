@@ -27,6 +27,6 @@ FoV:
     _2: 0.01
 
 lr: 0.00005
-max_epoch: 200
-batch_size: 50
-num_test_trials: 10
+max_epoch: 1000
+batch_size: 20
+num_test_trials: 20
