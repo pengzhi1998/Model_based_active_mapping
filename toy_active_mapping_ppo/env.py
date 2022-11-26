@@ -2,6 +2,8 @@ import math
 import numpy as np
 import gym
 import random
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 from numpy.linalg import slogdet

@@ -131,3 +131,6 @@ class ModelBasedAgent:
 
     def get_policy_state_dict(self):
         return self._policy.state_dict()
+
+    def load_policy_state_dict(self, load_model):
+        self._policy.load_state_dict(torch.load(load_model))
