@@ -4,8 +4,7 @@ import gym
 import torch
 from torch import nn
 
-from stable_baselines3 import PPO
-from stable_baselines3.common.policies import ActorCriticPolicy
+from stable_baselines3.common.policies import ActorCriticPolicy, BasePolicy
 
 
 class CustomNetwork(nn.Module):
@@ -56,7 +55,6 @@ class CustomNetwork(nn.Module):
         self.tanh = nn.Tanh()
         self.softmax = nn.Softmax(dim=2)
         # self.Norm = nn.LayerNorm()
-
 
     def forward(self, observation: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """
@@ -123,6 +121,7 @@ class CustomNetwork(nn.Module):
         info_embedding = self.relu(self.info_fc1_vf(torch.cat((agent_pos_embedding, landmark_embedding_att), 1)))
         value = self.tanh(self.value_fc1_vf(info_embedding))
         return value
+
 
 class CustomActorCriticPolicy(ActorCriticPolicy):
     def __init__(
