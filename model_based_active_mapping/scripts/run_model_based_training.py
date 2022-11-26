@@ -79,7 +79,7 @@ def run_model_based_training(params_filename):
         print('Normalized average reward at epoch {}: {}'.format(i, np.mean(reward_list[i])))
         print('Normalized median reward at epoch {}: {}'.format(i, np.median(reward_list[i])))
 
-    torch.save(agent.get_policy_state_dict(), 'model_info_5_moving_landmarks_1.pth')
+    torch.save(agent.get_policy_state_dict(), 'model_info_5_moving_landmarks_2.pth')
 
     plt.figure()
     plt.plot(np.mean(reward_list, axis=1), 'b-', label='Average')
