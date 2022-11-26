@@ -21,7 +21,7 @@ class ModelBasedAgent:
         self._inv_V = V ** (-1)
 
         # input_dim = num_landmarks * 4 + 3
-        input_dim = num_landmarks * 2
+        input_dim = num_landmarks * 4
         self._policy = PolicyNet(input_dim=input_dim)
 
         self._policy_optimizer = Adam(self._policy.parameters(), lr=lr)
@@ -43,8 +43,8 @@ class ModelBasedAgent:
 
         # net_input = torch.hstack((x, self._info.flatten(), next_mu.flatten()))
 
-        # net_input = torch.hstack((self._info.flatten(), q.flatten()))
-        net_input = q.flatten()
+        net_input = torch.hstack((self._info.flatten(), q.flatten()))
+        # net_input = q.flatten()
         action = self._policy.forward(net_input)
         return action
 
@@ -98,15 +98,15 @@ class ModelBasedAgent:
     def set_policy_grad_to_zero(self):
         self._policy_optimizer.zero_grad()
 
-    # def update_policy_grad(self):
-    #     reward = - torch.sum(torch.log(self._info))
-    #     reward.backward()
-    #     return -reward.item()
-
-    def update_policy_grad(self, mu, x):
-        reward = ((x[:2] - mu)**2).sum()
+    def update_policy_grad(self):
+        reward = - torch.sum(torch.log(self._info))
         reward.backward()
-        return reward.item()
+        return -reward.item()
+
+    # def update_policy_grad(self, mu, x):
+    #     reward = ((x[:2] - mu)**2).sum()
+    #     reward.backward()
+    #     return reward.item()
 
     def policy_step(self, debug=False):
         if debug:
@@ -128,3 +128,6 @@ class ModelBasedAgent:
 
             print("Gradient power after backward: {}".format(grad_power))
             print("RSSD of weights after applying the gradient: {}".format(total_param_rssd))
+
+    def get_policy_state_dict(self):
+        return self._policy.state_dict()

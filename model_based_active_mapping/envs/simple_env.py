@@ -9,7 +9,7 @@ from model_based_active_mapping.utilities.utils import SE2_kinematics, landmark_
 
 class SimpleEnv:
 
-    def __init__(self, num_landmarks, horizon, width, height, tau, A, B, landmark_motion_scale):
+    def __init__(self, num_landmarks, horizon, width, height, tau, A, B, landmark_motion_scale, psi, radius):
         self._num_landmarks = num_landmarks
         self._horizon = horizon
         self._env_size = tensor([width, height])
@@ -22,6 +22,9 @@ class SimpleEnv:
         self._v = None
         self._x = None
         self._step_num = None
+
+        self._psi = psi
+        self._radius = radius
 
     def reset(self):
         mu = torch.rand((self._num_landmarks, 2)) * self._env_size
@@ -68,13 +71,25 @@ class SimpleEnv:
                        (255, 0, 0), -1)
 
         robot_pose = self._x.detach().numpy()
-        # robot_pose = np.array([1, 4, np.pi * 0.5])
+        # robot_pose = np.array([0, 5, np.pi * 0.0])
 
         cv2.circle(canvas, (int(robot_pose[0] * render_size), int(robot_pose[1] * render_size)), 10, (0, 0, 255), -1)
         canvas = cv2.arrowedLine(canvas, (int(robot_pose[0] * render_size), int(robot_pose[1] * render_size)),
                                  (int(robot_pose[0] * render_size + arrow_length * np.cos(robot_pose[2])),
                                   int(robot_pose[1] * render_size + arrow_length * np.sin(robot_pose[2]))),
                                  (0, 0, 255), 2, tipLength=0.5)
+
+        FoV_corners = np.array([(int(robot_pose[0] * render_size), int(robot_pose[1] * render_size)),
+                                (int((robot_pose[0] + self._radius *
+                                      np.cos(robot_pose[2] + self._psi) / np.cos(self._psi)) * render_size),
+                                 int((robot_pose[1] + self._radius *
+                                      np.sin(robot_pose[2] + self._psi) / np.cos(self._psi)) * render_size)),
+                                (int((robot_pose[0] + self._radius *
+                                      np.cos(robot_pose[2] - self._psi) / np.cos(self._psi)) * render_size),
+                                 int((robot_pose[1] + self._radius *
+                                      np.sin(robot_pose[2] - self._psi) / np.cos(self._psi)) * render_size))])
+
+        cv2.polylines(canvas, [FoV_corners], isClosed=True, color=(0, 255, 0), thickness=2)
 
         cv2.namedWindow('map', cv2.WINDOW_GUI_NORMAL)
         cv2.imshow('map', canvas)

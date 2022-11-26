@@ -49,7 +49,7 @@ def run_model_based_training(params_filename):
     num_test_trials = params['num_test_trials']
 
     env = SimpleEnv(num_landmarks=num_landmarks, horizon=horizon, width=env_width, height=env_height, tau=tau,
-                    A=A, B=B, landmark_motion_scale=landmark_motion_scale)
+                    A=A, B=B, landmark_motion_scale=landmark_motion_scale, psi=psi, radius=radius)
     agent = ModelBasedAgent(num_landmarks=num_landmarks, init_info=init_info, A=A, B=B, W=W,
                             radius=radius, psi=psi, kappa=kappa, V=V, lr=lr)
 
@@ -67,11 +67,11 @@ def run_model_based_training(params_filename):
                 action = agent.plan(mu, v, x)
                 action_list[i * batch_size + j, step, :] = action.detach().numpy()
                 mu, v, x, done = env.step(action)
-                # agent.update_info(mu, x)
+                agent.update_info(mu, x)
                 step += 1
 
-            # reward_list[i * batch_size + j] = agent.update_policy_grad() / num_landmarks
-            reward_list[i, j] = agent.update_policy_grad(mu, x) / num_landmarks
+            reward_list[i, j] = agent.update_policy_grad() / num_landmarks
+            # reward_list[i, j] = agent.update_policy_grad(mu, x) / num_landmarks
 
         agent.policy_step(debug=False)
 
@@ -79,8 +79,12 @@ def run_model_based_training(params_filename):
         print('Normalized average reward at epoch {}: {}'.format(i, np.mean(reward_list[i])))
         print('Normalized median reward at epoch {}: {}'.format(i, np.median(reward_list[i])))
 
+    torch.save(agent.get_policy_state_dict(), 'model_info_2.pth')
+
     plt.figure()
     plt.plot(np.mean(reward_list, axis=1), 'b-', label='Average')
+    plt.plot(np.mean(reward_list, axis=1) + np.std(reward_list, axis=1), 'b--')
+    plt.plot(np.mean(reward_list, axis=1) - np.std(reward_list, axis=1), 'b--')
     plt.plot(np.median(reward_list, axis=1), 'r--', label='Median')
     plt.xlabel("Epoch")
     plt.ylabel("Normalized Reward")

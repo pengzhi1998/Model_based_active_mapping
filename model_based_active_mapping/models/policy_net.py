@@ -22,10 +22,21 @@ class PolicyNet(nn.Module):
         # self.mixer_fc = nn.Sequential(*[nn.Linear(3 * 32, 32), self.relu])
         # self.pi_fc = nn.Sequential(*[nn.Linear(32, policy_dim), self.tanh])
 
-        self.fc_1 = nn.Sequential(*[nn.Linear(input_dim, 32), self.relu])
-        self.fc_2 = nn.Sequential(*[nn.Linear(32, 64), self.relu])
-        self.fc_3 = nn.Sequential(*[nn.Linear(64, 32), self.relu])
-        self.pi_fc = nn.Sequential(*[nn.Linear(32, policy_dim), self.tanh])
+        # self.fc_1 = nn.Sequential(*[nn.Linear(input_dim, 32), self.relu])
+        # self.fc_2 = nn.Sequential(*[nn.Linear(32, 64), self.relu])
+        # self.fc_2 = nn.Sequential(*[nn.Linear(64, 128), self.relu])
+        # self.fc_3 = nn.Sequential(*[nn.Linear(128, 64), self.relu])
+        # self.fc_3 = nn.Sequential(*[nn.Linear(64, 32), self.relu])
+        # self.pi_fc = nn.Sequential(*[nn.Linear(32, policy_dim), self.tanh])
+
+        layers = []
+        layers += [nn.Linear(input_dim, 32), self.relu]
+        layers += [nn.Linear(32, 64), self.relu]
+        layers += [nn.Linear(64, 128), self.relu]
+        layers += [nn.Linear(128, 64), self.relu]
+        layers += [nn.Linear(64, 32), self.relu]
+        layers += [nn.Linear(32, policy_dim), self.tanh]
+        self.pi = nn.Sequential(*layers)
 
     def forward(self, observation: torch.Tensor) -> torch.Tensor:
         if len(observation.size()) == 1:
@@ -37,7 +48,9 @@ class PolicyNet(nn.Module):
 
         # action = self.pi_fc(self.mixer_fc(mixer_input))
 
-        action = self.pi_fc(self.fc_3(self.fc_2(self.fc_1(observation))))
+        # action = self.pi_fc(self.fc_3(self.fc_2(self.fc_1(observation))))
+
+        action = self.pi(observation)
 
         if action.size()[0] == 1:
             action = action.flatten()

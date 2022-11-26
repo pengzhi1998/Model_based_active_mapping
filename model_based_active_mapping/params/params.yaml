@@ -1,5 +1,5 @@
-num_landmarks: 1
-horizon: 20
+num_landmarks: 5
+horizon: 50
 env_width: 10
 env_height: 10
 tau: 1.0
@@ -19,14 +19,14 @@ motion:
 init_info: 0.001
 
 FoV:
-  radius: 1
-  psi: 1.0471975511965976
+  radius: 3
+  psi: 0.5235987755982988
   kappa: 1.0
   V:
     _1: 0.01
     _2: 0.01
 
 lr: 0.00005
-max_epoch: 1000
+max_epoch: 5
 batch_size: 20
 num_test_trials: 20
