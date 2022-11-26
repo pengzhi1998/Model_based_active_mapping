@@ -17,6 +17,10 @@ parser.add_argument('--model-path', default="checkpoints/ppo_toy_active_mapping/
 parser.add_argument('--model', default="attention")
 parser.add_argument('--seed', type=int, default=0, help="use multiple seeds to train, values should be 0, 10, and 100")
 parser.add_argument('--count', type=int, default=0, help="just for large-scale comparison, to decide input which initialized landmarks")
+parser.add_argument('--SE3-control', type=int, default=1, help="if true: use SE3 control to directly control v_x and v_yaw while v_y is always 0,"
+                                                           "if false: directly control x and y while yaw is always kept 0")
+parser.add_argument('--motion-model', type=int, default=1, help="if 1: noisy static model (landmarks moving in smaller area),"
+                                                           "if 2: noisy motion model (landmarks moving in one direction with noise)")
 parser.add_argument('--for-comparison', type=int, default=0, help="0 means this code is running for training or simple tests,"
                                                                   "otherwise this is for large-scale tests, while we need to read the"
                                                                   "randomized landmarks' and agent's initial positions from a generated"
@@ -65,7 +69,8 @@ def test_agent(agent):
     # get env
     NUM_TEST = 10
     my_open_results = open(results_file_path, "a")
-    env = SimpleQuadrotor(args.bound, args.num_landmarks, args.horizon, args.for_comparison, args.special_case, True)
+    env = SimpleQuadrotor(args.bound, args.num_landmarks, args.horizon, args.SE3_control, args.motion_model,
+                          args.for_comparison, args.special_case, True)
     init_agent_landmarks = generate_testing_data()
 
     # get parameters
