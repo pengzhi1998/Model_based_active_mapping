@@ -14,7 +14,7 @@ motion:
   W:
     _1: 0.005
     _2: 0.005
-  landmark_motion_scale: 0.0
+  landmark_motion_scale: 0.3
 
 init_info: 0.001
 
@@ -27,6 +27,6 @@ FoV:
     _2: 0.01
 
 lr: 0.00005
-max_epoch: 5
+max_epoch: 2500
 batch_size: 20
 num_test_trials: 20

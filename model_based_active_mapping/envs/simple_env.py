@@ -20,6 +20,7 @@ class SimpleEnv:
 
         self._mu = None
         self._v = None
+        self._landmark_motion_bias = None
         self._x = None
         self._step_num = None
 
@@ -29,7 +30,8 @@ class SimpleEnv:
     def reset(self):
         mu = torch.rand((self._num_landmarks, 2)) * self._env_size
 
-        v = (torch.rand((self._num_landmarks, 2)) - 0.5) * self._landmark_motion_scale
+        landmark_motion_bias = (torch.rand(2) - 0.5) * 2
+        v = (torch.rand((self._num_landmarks, 2)) + landmark_motion_bias - 0.5) * self._landmark_motion_scale
 
         x = torch.empty(3)
         x[:2] = torch.rand(2) * self._env_size
@@ -37,6 +39,7 @@ class SimpleEnv:
 
         self._mu = mu
         self._v = v
+        self._landmark_motion_bias = landmark_motion_bias
         self._x = x
         self._step_num = 0
 
@@ -49,7 +52,8 @@ class SimpleEnv:
         self._mu = torch.clip(landmark_motion(self._mu, self._v, self._A, self._B),
                               min=torch.zeros(2), max=self._env_size)
 
-        self._v = (torch.rand((self._num_landmarks, 2)) - 0.5) * self._landmark_motion_scale
+        self._v = (torch.rand((self._num_landmarks, 2)) + self._landmark_motion_bias - 0.5) *\
+                  self._landmark_motion_scale
 
         done = False
         self._step_num += 1

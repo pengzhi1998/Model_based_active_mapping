@@ -30,12 +30,12 @@ class PolicyNet(nn.Module):
         # self.pi_fc = nn.Sequential(*[nn.Linear(32, policy_dim), self.tanh])
 
         layers = []
-        layers += [nn.Linear(input_dim, 32), self.relu]
-        layers += [nn.Linear(32, 64), self.relu]
-        layers += [nn.Linear(64, 128), self.relu]
-        layers += [nn.Linear(128, 64), self.relu]
-        layers += [nn.Linear(64, 32), self.relu]
-        layers += [nn.Linear(32, policy_dim), self.tanh]
+        layers += [nn.Linear(input_dim, int(input_dim * 4)), self.relu]
+        layers += [nn.Linear(int(input_dim * 4), int(input_dim * 8)), self.relu]
+        layers += [nn.Linear(int(input_dim * 8), int(input_dim * 12)), self.relu]
+        layers += [nn.Linear(int(input_dim * 12), int(input_dim * 8)), self.relu]
+        layers += [nn.Linear(int(input_dim * 8), int(input_dim * 4)), self.relu]
+        layers += [nn.Linear(int(input_dim * 4), policy_dim), self.tanh]
         self.pi = nn.Sequential(*layers)
 
     def forward(self, observation: torch.Tensor) -> torch.Tensor:

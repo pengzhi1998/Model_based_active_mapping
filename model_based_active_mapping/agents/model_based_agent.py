@@ -38,8 +38,8 @@ class ModelBasedAgent:
     def plan(self, mu, v, x):
         next_mu = landmark_motion(mu, v, self._A, self._B)
 
-        q = torch.hstack(((next_mu[:, 0] - x[0]) * torch.cos(x[2]) + (next_mu[:, 1] - x[1]) * torch.sin(x[2]),
-                          (x[0] - next_mu[:, 0]) * torch.sin(x[2]) + (next_mu[:, 1] - x[1]) * torch.cos(x[2])))
+        q = torch.vstack(((next_mu[:, 0] - x[0]) * torch.cos(x[2]) + (next_mu[:, 1] - x[1]) * torch.sin(x[2]),
+                          (x[0] - next_mu[:, 0]) * torch.sin(x[2]) + (next_mu[:, 1] - x[1]) * torch.cos(x[2]))).T
 
         # net_input = torch.hstack((x, self._info.flatten(), next_mu.flatten()))
 
@@ -53,10 +53,10 @@ class ModelBasedAgent:
         # mu_h = torch.hstack((mu, torch.ones((mu.shape[0], 1))))
         # q = (mu_h @ transformation.T)[:, :2]
 
-        q = torch.hstack(((mu[:, 0] - x[0]) * torch.cos(x[2]) + (mu[:, 1] - x[1]) * torch.sin(x[2]),
-                          (x[0] - mu[:, 0]) * torch.sin(x[2]) + (mu[:, 1] - x[1]) * torch.cos(x[2])))
+        q = torch.vstack(((mu[:, 0] - x[0]) * torch.cos(x[2]) + (mu[:, 1] - x[1]) * torch.sin(x[2]),
+                          (x[0] - mu[:, 0]) * torch.sin(x[2]) + (mu[:, 1] - x[1]) * torch.cos(x[2]))).T
 
-        SDF = triangle_SDF(q[None, :], self._psi, self._radius)
+        SDF = triangle_SDF(q, self._psi, self._radius)
         M = (1 - phi(SDF, self._kappa))[:, None] * self._inv_V.repeat(self._num_landmarks, 1)
         # Assuming A = I:
         self._info = (self._info**(-1) + self._W)**(-1) + M
