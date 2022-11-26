@@ -10,7 +10,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-NUM_STEPS = 6e5
+NUM_STEPS = 1.5e6
 LOG_INTERVAL = 1
 parser = argparse.ArgumentParser(description='landmark-based mapping')
 parser.add_argument('--num-landmarks', type=int, default=5)
@@ -18,6 +18,10 @@ parser.add_argument('--horizon', type=int, default=15)
 parser.add_argument('--bound', type=int, default=10)
 parser.add_argument('--model', default="attention")
 parser.add_argument('--seed', type=int, default=0, help="use multiple seeds to train, values should be 0, 10, and 100")
+parser.add_argument('--SE3-control', type=int, default=1, help="if true: use SE3 control to directly control v_x and v_yaw while v_y is always 0,"
+                                                           "if false: directly control x and y while yaw is always kept 0")
+parser.add_argument('--motion-model', type=int, default=1, help="if 1: noisy static model (landmarks moving in smaller area),"
+                                                           "if 2: noisy motion model (landmarks moving in one direction with noise)")
 parser.add_argument('--for-comparison', type=int, default=0, help="0 means this code is running for training or simple tests,"
                                                                   "otherwise this is for large-scale tests, while we need to read the"
                                                                   "randomized landmarks' and agent's initial positions from a generated"
@@ -63,7 +67,8 @@ if __name__ == '__main__':
 
     # wrap with vector env
     env = make_vec_env("SimpleQuadrotor-v0", n_envs=1,
-                       env_kwargs={"bound": args.bound, "num_landmarks" : args.num_landmarks, "horizon" : args.horizon, "for_comparison" : args.for_comparison,
+                       env_kwargs={"bound": args.bound, "num_landmarks" : args.num_landmarks, "horizon" : args.horizon,
+                                   "SE3_control" : args.SE3_control, "motion_model" : args.motion_model, "for_comparison" : args.for_comparison,
                                    "special_case" : args.special_case, "test" : False})
 
     # train agent
