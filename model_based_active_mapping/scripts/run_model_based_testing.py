@@ -49,7 +49,7 @@ def run_model_based_testing(params_filename):
     num_test_trials = params['num_test_trials']
 
     env = SimpleEnv(num_landmarks=num_landmarks, horizon=horizon, width=env_width, height=env_height, tau=tau,
-                    A=A, B=B, landmark_motion_scale=landmark_motion_scale, psi=psi, radius=radius)
+                    A=A, B=B, V=V, W=W, landmark_motion_scale=landmark_motion_scale, psi=psi, radius=radius)
     agent = ModelBasedAgent(num_landmarks=num_landmarks, init_info=init_info, A=A, B=B, W=W,
                             radius=radius, psi=psi, kappa=kappa, V=V, lr=lr)
 
@@ -57,16 +57,17 @@ def run_model_based_testing(params_filename):
 
     agent.eval_policy()
     for i in range(num_test_trials):
-        mu, v, x, done = env.reset()
+        mu_real, v, x, done = env.reset()
         agent.reset_agent_info()
+        agent.reset_estimate_mu(mu_real)
         env.render()
         while not done:
-            action = agent.plan(mu, v, x)
-            print(action)
-            mu, v, x, done = env.step(action)
-            agent.update_info(mu, x)
+            action = agent.plan(v, x)
+            mu_real, v, x, done = env.step(action)
+            agent.update_info_mu(mu_real, x)
             env.render()
-            print(agent.update_policy_grad() / num_landmarks)
+
+        reward = agent.update_policy_grad(False) / num_landmarks
 
 
 if __name__ == '__main__':

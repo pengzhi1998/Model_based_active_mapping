@@ -16,6 +16,9 @@ def SE2_kinematics(x: tensor, action: tensor, tau: float) -> tensor:
 def landmark_motion(mu: tensor, v: tensor, A: tensor, B: tensor) -> tensor:
     return mu @ A.T + v @ B.T
 
+def landmark_motion_real(mu: tensor, v: tensor, A: tensor, B: tensor, W: tensor) -> tensor:
+    # print(mu, A.T, torch.normal(mean=torch.zeros(mu.size()), std=torch.sqrt(W)), "\n\n\n")
+    return mu @ A.T + v @ B.T + torch.normal(mean=torch.zeros(mu.size()), std=torch.sqrt(W))
 
 def triangle_SDF(q: tensor, psi: float, r: float) -> tensor:
     x, y = q[:, 0], q[:, 1]

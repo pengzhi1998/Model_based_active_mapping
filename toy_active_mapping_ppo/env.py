@@ -125,7 +125,7 @@ class SimpleQuadrotor(gym.Env):
         # reward
         V_jj_inv = diff_FoV_land_triangle(next_agent_pos, self.landmarks_estimate, self.num_landmarks, RADIUS, KAPPA,
                                  STD_sensor).astype(np.float32)
-        next_info_mat = self.info_mat + H_mat.transpose() @ V_jj_inv @ H_mat  # update info
+        next_info_mat = self.info_mat + V_jj_inv  # update info
         reward = float(slogdet(next_info_mat)[1] - slogdet(self.info_mat_update)[1])  # slogdet(Y_{k+1}) - slogdet(Y_k) for model-free stage-wise reward
         self.info_mat_update = next_info_mat
 

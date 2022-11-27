@@ -18,6 +18,7 @@ class ModelBasedAgent:
         self._psi = psi
         self._radius = radius
         self._kappa = kappa
+        self._V = V
         self._inv_V = V ** (-1)
 
         # input_dim = num_landmarks * 4 + 3
@@ -29,37 +30,58 @@ class ModelBasedAgent:
     def reset_agent_info(self):
         self._info = self._init_info * torch.ones((self._num_landmarks, 2))
 
+    def reset_estimate_mu(self, mu_real):
+        self._mu_update = mu_real + torch.normal(mean=torch.zeros(self._num_landmarks, 2), std=torch.sqrt(self._V))  # with the shape of (num_landmarks, 2)
+
     def eval_policy(self):
         self._policy.eval()
 
     def train_policy(self):
         self._policy.train()
 
-    def plan(self, mu, v, x):
-        next_mu = landmark_motion(mu, v, self._A, self._B)
+    def plan(self, v, x):
+        self._mu_predict = landmark_motion(self._mu_update, v, self._A, self._B)
+        self._info = (self._info**(-1) + self._W)**(-1)
 
-        q = torch.vstack(((next_mu[:, 0] - x[0]) * torch.cos(x[2]) + (next_mu[:, 1] - x[1]) * torch.sin(x[2]),
-                          (x[0] - next_mu[:, 0]) * torch.sin(x[2]) + (next_mu[:, 1] - x[1]) * torch.cos(x[2]))).T
+        q_predict = torch.vstack(((self._mu_predict[:, 0] - x[0]) * torch.cos(x[2]) + (self._mu_predict[:, 1] - x[1]) * torch.sin(x[2]),
+                          (x[0] - self._mu_predict[:, 0]) * torch.sin(x[2]) + (self._mu_predict[:, 1] - x[1]) * torch.cos(x[2]))).T
 
         # net_input = torch.hstack((x, self._info.flatten(), next_mu.flatten()))
 
-        net_input = torch.hstack((self._info.flatten(), q.flatten()))
+        net_input = torch.hstack((self._info.flatten(), q_predict.flatten()))
         # net_input = q.flatten()
         action = self._policy.forward(net_input)
         return action
 
-    def update_info(self, mu, x):
-        # transformation = get_transformation(x)
-        # mu_h = torch.hstack((mu, torch.ones((mu.shape[0], 1))))
-        # q = (mu_h @ transformation.T)[:, :2]
+    def update_info_mu(self, mu_real, x):
+        q_real = torch.vstack(((mu_real[:, 0] - x[0]) * torch.cos(x[2]) + (mu_real[:, 1] - x[1]) * torch.sin(x[2]),
+                          (x[0] - mu_real[:, 0]) * torch.sin(x[2]) + (mu_real[:, 1] - x[1]) * torch.cos(x[2]))).T
+        sensor_value = torch.zeros(self._num_landmarks, 2)
+        SDF_real = triangle_SDF(q_real, self._psi, self._radius)
+        for i in range(self._num_landmarks):
+            if SDF_real[i] <= 0:
+                sensor_value[i] = mu_real[i] + torch.normal(mean=torch.zeros(1, 2), std=torch.sqrt(self._V))
+                # print(sensor_value[i])
+            else:
+                sensor_value[i] = self._mu_predict[i].flatten()
+                # print(sensor_value[i])
 
-        q = torch.vstack(((mu[:, 0] - x[0]) * torch.cos(x[2]) + (mu[:, 1] - x[1]) * torch.sin(x[2]),
-                          (x[0] - mu[:, 0]) * torch.sin(x[2]) + (mu[:, 1] - x[1]) * torch.cos(x[2]))).T
+        info_mat = torch.diag(self._info.flatten())
+        R_mat = torch.eye(self._num_landmarks * 2) * self._V[0]  # sensor uncertainty covariance matrix
+        S_mat = torch.inverse(info_mat) + R_mat
+        kalman_gain = torch.inverse(info_mat) @ torch.inverse(S_mat)
 
-        SDF = triangle_SDF(q, self._psi, self._radius)
-        M = (1 - phi(SDF, self._kappa))[:, None] * self._inv_V.repeat(self._num_landmarks, 1)
+        self._mu_update = torch.reshape(self._mu_predict.flatten() +
+                                        (kalman_gain @ (sensor_value.flatten() -
+                                                        (self._mu_predict).flatten())).flatten(), (self._num_landmarks, 2))
+
+        q_update = torch.vstack(
+            ((self._mu_update[:, 0] - x[0]) * torch.cos(x[2]) + (self._mu_update[:, 1] - x[1]) * torch.sin(x[2]),
+             (x[0] - self._mu_update[:, 0]) * torch.sin(x[2]) + (self._mu_update[:, 1] - x[1]) * torch.cos(x[2]))).T
+        SDF_update = triangle_SDF(q_update, self._psi, self._radius)
+        M = (1 - phi(SDF_update, self._kappa))[:, None] * self._inv_V.repeat(self._num_landmarks, 1)
         # Assuming A = I:
-        self._info = (self._info**(-1) + self._W)**(-1) + M
+        self._info = self._info + M
 
     # def update_policy(self, debug=False):
     #     self._policy_optimizer.zero_grad()
@@ -98,9 +120,10 @@ class ModelBasedAgent:
     def set_policy_grad_to_zero(self):
         self._policy_optimizer.zero_grad()
 
-    def update_policy_grad(self):
+    def update_policy_grad(self, train=True):
         reward = - torch.sum(torch.log(self._info))
-        reward.backward()
+        if train == True:
+            reward.backward()
         return -reward.item()
 
     # def update_policy_grad(self, mu, x):
