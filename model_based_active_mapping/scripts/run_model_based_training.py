@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from torch import tensor
 from model_based_active_mapping.envs.simple_env import SimpleEnv
 from model_based_active_mapping.agents.model_based_agent import ModelBasedAgent
+from torch.utils.tensorboard import SummaryWriter
 
 
 def run_model_based_training(params_filename):
@@ -54,10 +55,12 @@ def run_model_based_training(params_filename):
                     A=A, B=B, V=V, W=W, landmark_motion_scale=landmark_motion_scale, psi=psi, radius=radius)
     agent = ModelBasedAgent(num_landmarks=num_landmarks, init_info=init_info, A=A, B=B, W=W,
                             radius=radius, psi=psi, kappa=kappa, V=V, lr=lr)
+    writer = SummaryWriter('./tensorboard/')
 
     agent.train_policy()
     reward_list = np.empty((max_epoch, batch_size))
     action_list = np.empty((max_epoch * batch_size, horizon, 2))
+    best_reward = 1.
     for i in range(max_epoch):
         agent.set_policy_grad_to_zero()
 
@@ -74,15 +77,21 @@ def run_model_based_training(params_filename):
                 step += 1
 
             reward_list[i, j] = agent.update_policy_grad() / num_landmarks
+            writer.add_scalar('Average Reward', reward_list[i, j], i)
             # reward_list[i, j] = agent.update_policy_grad(mu, x) / num_landmarks
 
         agent.policy_step(debug=False)
 
         print('Epoch {} finished!'.format(i + 1))
-        print('Normalized average reward at epoch {}: {}'.format(i, np.mean(reward_list[i])))
+        mean_reward = np.mean(reward_list[i])
+        print('Normalized average reward at epoch {}: {}'.format(i, mean_reward))
         print('Normalized median reward at epoch {}: {}'.format(i, np.median(reward_list[i])))
+        if mean_reward > best_reward:
+            torch.save(agent.get_policy_state_dict(), './checkpoints/best_model.pth')
+            best_reward = mean_reward
+            print("New best model!\n")
 
-    torch.save(agent.get_policy_state_dict(), 'model_info_5_moving_landmarks_2.pth')
+    torch.save(agent.get_policy_state_dict(), './checkpoints/model_info_5_moving_landmarks_2.pth')
 
     plt.figure()
     plt.plot(np.mean(reward_list, axis=1), 'b-', label='Average')
@@ -111,11 +120,12 @@ def run_model_based_training(params_filename):
     for i in range(num_test_trials):
         mu, v, x, done = env.reset()
         agent.reset_agent_info()
+        agent.reset_estimate_mu()
         env.render()
         while not done:
-            action = agent.plan(mu, v, x)
-            mu, v, x, done = env.step(action)
-            agent.update_info(mu, x)
+            action = agent.plan(v, x)
+            mu_real, v, x, done = env.step(action)
+            agent.update_info_mu(mu_real, x)
             env.render()
 
 

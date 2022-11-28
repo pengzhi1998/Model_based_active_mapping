@@ -59,7 +59,7 @@ class SimpleEnv:
         # self._x[:2] = torch.clip(self._x[:2], min=torch.zeros(2), max=self._env_size)
 
         self._mu_real = torch.clip(landmark_motion_real(self._mu_real, self._v, self._A, self._B, self._W),
-                                   min=-self._env_size, max=self._env_size)
+                                   min=-self._env_size/2, max=self._env_size/2)
 
         self._v = (torch.rand((self._num_landmarks, 2)) + self._landmark_motion_bias - 0.5) *\
                   self._landmark_motion_scale

@@ -53,7 +53,7 @@ def run_model_based_testing(params_filename):
     agent = ModelBasedAgent(num_landmarks=num_landmarks, init_info=init_info, A=A, B=B, W=W,
                             radius=radius, psi=psi, kappa=kappa, V=V, lr=lr)
 
-    agent.load_policy_state_dict('./checkpoints/model_info_5_moving_landmarks_2.pth')
+    agent.load_policy_state_dict('./checkpoints/best_model.pth')
 
     agent.eval_policy()
     for i in range(num_test_trials):
@@ -68,6 +68,7 @@ def run_model_based_testing(params_filename):
             env.render()
 
         reward = agent.update_policy_grad(False) / num_landmarks
+        print(reward)
 
 
 if __name__ == '__main__':

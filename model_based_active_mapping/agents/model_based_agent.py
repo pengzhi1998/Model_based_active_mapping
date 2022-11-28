@@ -1,5 +1,6 @@
 import torch
 
+from torch import tensor
 from torch.optim import SGD, Adam
 from model_based_active_mapping.models.policy_net import PolicyNet
 from model_based_active_mapping.utilities.utils import landmark_motion, triangle_SDF, get_transformation, phi
@@ -40,7 +41,9 @@ class ModelBasedAgent:
         self._policy.train()
 
     def plan(self, v, x):
-        self._mu_predict = landmark_motion(self._mu_update, v, self._A, self._B)
+        self._mu_predict = torch.clip(landmark_motion(self._mu_update, v, self._A, self._B),
+                                      min=-tensor([self._num_landmarks, self._num_landmarks]),
+                                      max=tensor([self._num_landmarks, self._num_landmarks]))
         self._info = (self._info**(-1) + self._W)**(-1)
 
         q_predict = torch.vstack(((self._mu_predict[:, 0] - x[0]) * torch.cos(x[2]) + (self._mu_predict[:, 1] - x[1]) * torch.sin(x[2]),
