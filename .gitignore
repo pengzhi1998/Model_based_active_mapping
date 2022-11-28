@@ -14,4 +14,5 @@ toy_active_mapping_ppo/Unity_envs
 **.idea
 **.venv
 model_based_active_mapping/scripts/checkpoints
+model_based_active_mapping/scripts/tensorboard
 **.pyc
