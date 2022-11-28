@@ -1,3 +1,4 @@
+max_num_landmarks: 7
 num_landmarks: 5
 horizon: 50
 env_width: 10

@@ -162,3 +162,118 @@ class SimpleEnv:
 
     def close (self):
         plt.close('all')
+
+
+class SimpleEnvAtt:
+    def __init__(self, num_landmarks, horizon, tau, A, B, V, W, landmark_motion_scale, psi, radius):
+        self._num_landmarks = num_landmarks
+        self._horizon = horizon
+        self._env_size = tensor([self._num_landmarks*2, self._num_landmarks*2])
+        self._tau = tau
+        self._A = A
+        self._B = B
+        self._V = V  # sensor_std ** 2 with the shape of (2, )
+        self._W = W  # motion_std ** 2 with the shape of (2, )
+        self._landmark_motion_scale = landmark_motion_scale
+
+        self._mu = None
+        self._v = None
+        self._landmark_motion_bias = None
+        self._x = None
+        self._step_num = None
+
+        self._psi = psi
+        self._radius = radius
+
+    def reset(self):
+        mu = (torch.rand((self._num_landmarks, 2)) - 0.5) * self._env_size
+
+        landmark_motion_bias = (torch.rand(2) - 0.5) * 2
+        v = (torch.rand((self._num_landmarks, 2)) + landmark_motion_bias - 0.5) * self._landmark_motion_scale
+
+        x = torch.empty(3)
+        x[:2] = (torch.rand(2) - 0.5) * self._env_size
+        x[2] = (torch.rand(1) * 2 - 1) * torch.pi
+
+        self._mu_real = mu
+        self._v = v
+        self._landmark_motion_bias = landmark_motion_bias
+        self._x = x
+        self._step_num = 0
+
+        self.history_poses = [self._x.detach().numpy().tolist()]
+        self.fig = plt.figure(1)
+        self.ax = self.fig.gca()
+
+        return self._mu_real, v, x, False
+
+    def step(self, action: tensor) -> Tuple[tensor, tensor, tensor, bool]:
+        self._x = SE2_kinematics(self._x, action, self._tau)
+        # self._x[:2] = torch.clip(self._x[:2], min=torch.zeros(2), max=self._env_size)
+
+        self._mu_real = torch.clip(landmark_motion_real(self._mu_real, self._v, self._A, self._B, self._W),
+                                   min=-self._env_size/2, max=self._env_size/2)
+
+        self._v = (torch.rand((self._num_landmarks, 2)) + self._landmark_motion_bias - 0.5) *\
+                  self._landmark_motion_scale
+
+        done = False
+        self._step_num += 1
+        if self._step_num >= self._horizon:
+            done = True
+
+        self.history_poses.append(self._x.detach().numpy().tolist())
+
+        return self._mu_real, self._v, self._x, done
+
+    def _plot(self, legend, title='trajectory'):
+        self.landmarks = self._mu_real.flatten().detach().numpy().reshape(self._num_landmarks*2, 1)
+
+        # plot agent trajectory
+        plt.tick_params(labelsize=15)
+        history_poses = np.array(self.history_poses)  # with the shape of (self._num_landmarks, 2)
+        self.ax.plot(history_poses[:, 0], history_poses[:, 1], c='black', linewidth=3, label='agent trajectory')
+
+        # plot agent trajectory start & end
+        self.ax.scatter(history_poses[0, 0], history_poses[0, 1], marker='>', s=70, c='red', label="start")
+        self.ax.scatter(history_poses[-1, 0], history_poses[-1, 1], marker='s', s=70, c='red', label="end")
+
+        self.ax.scatter(history_poses[-1, 0] + np.cos(history_poses[-1, 2])*0.5,
+                     history_poses[-1, 1] + np.sin(history_poses[-1, 2])*0.5, marker='o', c='black')
+
+        # plot landmarks
+        self.ax.scatter(self.landmarks[list(range(0, self._num_landmarks*2, 2)), :],
+                        self.landmarks[list(range(1, self._num_landmarks*2+1, 2)), :], s=50, c='blue', label="landmark")
+
+        # axes
+        self.ax.set_xlabel("x", fontdict={'size': 20})
+        self.ax.set_ylabel("y", fontdict={'size': 20})
+
+        # title
+        # self.ax.set_title(title, fontdict={'size': 16})
+
+        self.ax.set_facecolor('whitesmoke')
+        plt.grid(alpha=0.4)
+        # legend
+        if legend == True:
+            self.ax.legend()
+            plt.legend(prop={'size': 14})
+
+
+    def render(self, mode='human'):
+        self.ax.cla()
+
+        # plot
+        self._plot(True)
+
+        # display
+        plt.draw()
+        plt.pause(0.2)
+
+    def save_plot(self, name='default.png', title='trajectory', legend=False):
+        self.ax.cla()
+        self._plot(legend, title=title)
+        self.fig.savefig(name, bbox_inches = 'tight')
+
+    def close (self):
+        plt.close('all')

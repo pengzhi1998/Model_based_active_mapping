@@ -1,4 +1,5 @@
 import os, yaml
+import argparse
 import torch
 import numpy as np
 import matplotlib
@@ -6,16 +7,21 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 from torch import tensor
-from model_based_active_mapping.envs.simple_env import SimpleEnv
-from model_based_active_mapping.agents.model_based_agent import ModelBasedAgent
+from model_based_active_mapping.envs.simple_env import SimpleEnv, SimpleEnvAtt
+from model_based_active_mapping.agents.model_based_agent import ModelBasedAgent, ModelBasedAgentAtt
 from torch.utils.tensorboard import SummaryWriter
 
+parser = argparse.ArgumentParser(description='model-based mapping')
+parser.add_argument('--network-type', type=int, default=1, help='by default, it should attention block,'
+                                                                'otherwise, it would be MLP')
+args = parser.parse_args()
 
 def run_model_based_training(params_filename):
     assert os.path.exists(params_filename)
     with open(os.path.join(params_filename)) as f:
         params = yaml.load(f, Loader=yaml.FullLoader)
 
+    max_num_landmarks = params['max_num_landmarks']
     num_landmarks = params['num_landmarks']
     horizon = params['horizon']
     env_width = params['env_width']
@@ -51,9 +57,15 @@ def run_model_based_training(params_filename):
     batch_size = params['batch_size']
     num_test_trials = params['num_test_trials']
 
-    env = SimpleEnv(num_landmarks=num_landmarks, horizon=horizon, width=env_width, height=env_height, tau=tau,
-                    A=A, B=B, V=V, W=W, landmark_motion_scale=landmark_motion_scale, psi=psi, radius=radius)
-    agent = ModelBasedAgent(num_landmarks=num_landmarks, init_info=init_info, A=A, B=B, W=W,
+    if args.network_type == 1:
+        agent = ModelBasedAgentAtt(max_num_landmarks=max_num_landmarks, init_info=init_info, A=A, B=B, W=W,
+                            radius=radius, psi=psi, kappa=kappa, V=V, lr=lr)
+        env = SimpleEnvAtt(num_landmarks=num_landmarks, horizon=horizon, tau=tau,
+                        A=A, B=B, V=V, W=W, landmark_motion_scale=landmark_motion_scale, psi=psi, radius=radius)
+    else:
+        env = SimpleEnv(num_landmarks=num_landmarks, horizon=horizon, width=env_width, height=env_height, tau=tau,
+                        A=A, B=B, V=V, W=W, landmark_motion_scale=landmark_motion_scale, psi=psi, radius=radius)
+        agent = ModelBasedAgent(num_landmarks=num_landmarks, init_info=init_info, A=A, B=B, W=W,
                             radius=radius, psi=psi, kappa=kappa, V=V, lr=lr)
     writer = SummaryWriter('./tensorboard/')
 
@@ -66,8 +78,8 @@ def run_model_based_training(params_filename):
 
         for j in range(batch_size):
             mu_real, v, x, done = env.reset()
-            agent.reset_agent_info()
             agent.reset_estimate_mu(mu_real)
+            agent.reset_agent_info()
             step = 0
             while not done:
                 action = agent.plan(v, x)

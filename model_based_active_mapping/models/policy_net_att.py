@@ -3,13 +3,15 @@ import torch
 from torch import nn
 
 
-class SimplePolicyNet(nn.Module):
+class PolicyNetAtt(nn.Module):
 
     def __init__(self,
                  input_dim: int,
                  policy_dim: int = 2):
 
-        super(SimplePolicyNet, self).__init__()
+        super(PolicyNetAtt, self).__init__()
+
+        self.num_landmark = int((input_dim - 3) / 5)
 
         self.agent_pos_fc1_pi = nn.Linear(3, 32)
         self.agent_pos_fc2_pi = nn.Linear(32, 32)
@@ -53,6 +55,9 @@ class SimplePolicyNet(nn.Module):
     #     return action
 
     def forward(self, observation: torch.Tensor) -> torch.Tensor:
+        if len(observation.size()) == 1:
+            observation = observation[None, :]
+
         # compute the policy
         # embeddings of agent's position
         agent_pos_embedding = self.relu(self.agent_pos_fc1_pi(observation[:, :3]))
@@ -81,4 +86,9 @@ class SimplePolicyNet(nn.Module):
         action = self.tanh(self.action_fc1_pi(info_embedding))
         action = self.tanh(self.action_fc2_pi(action))
 
-        return action
+        if action.size()[0] == 1:
+            action = action.flatten()
+
+        scaled_action = torch.hstack(((1 + action[0]) / 2 * 1.0, action[1] * 0.1))
+
+        return scaled_action

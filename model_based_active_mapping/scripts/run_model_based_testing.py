@@ -1,18 +1,22 @@
 import os, yaml
 import torch
-import numpy as np
-import matplotlib.pyplot as plt
+import argparse
 
 from torch import tensor
-from model_based_active_mapping.envs.simple_env import SimpleEnv
-from model_based_active_mapping.agents.model_based_agent import ModelBasedAgent
+from model_based_active_mapping.envs.simple_env import SimpleEnv, SimpleEnvAtt
+from model_based_active_mapping.agents.model_based_agent import ModelBasedAgent, ModelBasedAgentAtt
 
+parser = argparse.ArgumentParser(description='model-based mapping')
+parser.add_argument('--network-type', type=int, default=1, help='by default, it should attention block,'
+                                                                'otherwise, it would be MLP')
+args = parser.parse_args()
 
 def run_model_based_testing(params_filename):
     assert os.path.exists(params_filename)
     with open(os.path.join(params_filename)) as f:
         params = yaml.load(f, Loader=yaml.FullLoader)
 
+    max_num_landmarks = params['max_num_landmarks']
     num_landmarks = params['num_landmarks']
     horizon = params['horizon']
     env_width = params['env_width']
@@ -48,18 +52,24 @@ def run_model_based_testing(params_filename):
     batch_size = params['batch_size']
     num_test_trials = params['num_test_trials']
 
-    env = SimpleEnv(num_landmarks=num_landmarks, horizon=horizon, width=env_width, height=env_height, tau=tau,
-                    A=A, B=B, V=V, W=W, landmark_motion_scale=landmark_motion_scale, psi=psi, radius=radius)
-    agent = ModelBasedAgent(num_landmarks=num_landmarks, init_info=init_info, A=A, B=B, W=W,
-                            radius=radius, psi=psi, kappa=kappa, V=V, lr=lr)
+    if args.network_type == 1:
+        agent = ModelBasedAgentAtt(max_num_landmarks=max_num_landmarks, init_info=init_info, A=A, B=B, W=W,
+                                   radius=radius, psi=psi, kappa=kappa, V=V, lr=lr)
+        env = SimpleEnvAtt(num_landmarks=num_landmarks, horizon=horizon, tau=tau,
+                           A=A, B=B, V=V, W=W, landmark_motion_scale=landmark_motion_scale, psi=psi, radius=radius)
+    else:
+        env = SimpleEnv(num_landmarks=num_landmarks, horizon=horizon, width=env_width, height=env_height, tau=tau,
+                        A=A, B=B, V=V, W=W, landmark_motion_scale=landmark_motion_scale, psi=psi, radius=radius)
+        agent = ModelBasedAgent(num_landmarks=num_landmarks, init_info=init_info, A=A, B=B, W=W,
+                                radius=radius, psi=psi, kappa=kappa, V=V, lr=lr)
 
     agent.load_policy_state_dict('./checkpoints/best_model.pth')
 
     agent.eval_policy()
     for i in range(num_test_trials):
         mu_real, v, x, done = env.reset()
-        agent.reset_agent_info()
         agent.reset_estimate_mu(mu_real)
+        agent.reset_agent_info()
         env.render()
         while not done:
             action = agent.plan(v, x)
