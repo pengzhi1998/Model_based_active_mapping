@@ -1,7 +1,6 @@
 import os, yaml
 import argparse
 import torch
-torch.manual_seed(0)
 import numpy as np
 import matplotlib
 matplotlib.use('TkAgg')
