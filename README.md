@@ -6,7 +6,7 @@ https://ucsd-prp.gitlab.io/userdocs/running/gui-desktop/
 ## Installation
 
 ```
-conda create -n landmark_mapping python==3.7 -y
+conda create -n landmark_mapping python==3.8 -y
 conda activate landmark_mapping
 pip install -r requirements.txt
 cd ./
