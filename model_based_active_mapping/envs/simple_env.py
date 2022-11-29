@@ -165,10 +165,10 @@ class SimpleEnv:
 
 
 class SimpleEnvAtt:
-    def __init__(self, num_landmarks, horizon, tau, A, B, V, W, landmark_motion_scale, psi, radius):
-        self._num_landmarks = num_landmarks
+    def __init__(self, max_num_landmarks, horizon, tau, A, B, V, W, landmark_motion_scale, psi, radius):
+        self._max_num_landmarks = max_num_landmarks
         self._horizon = horizon
-        self._env_size = tensor([self._num_landmarks*2, self._num_landmarks*2])
+
         self._tau = tau
         self._A = A
         self._B = B
@@ -186,6 +186,8 @@ class SimpleEnvAtt:
         self._radius = radius
 
     def reset(self):
+        self._num_landmarks = torch.randint(3, 8, (1, )).item()
+        self._env_size = tensor([self._num_landmarks * 2, self._num_landmarks * 2])
         mu = (torch.rand((self._num_landmarks, 2)) - 0.5) * self._env_size
 
         landmark_motion_bias = (torch.rand(2) - 0.5) * 2

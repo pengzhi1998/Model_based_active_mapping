@@ -23,7 +23,7 @@ class PolicyNetAtt(nn.Module):
 
         self.relu = nn.ReLU()
         self.tanh = nn.Tanh()
-        self.softmax = nn.Softmax()
+        self.softmax = nn.Softmax(dim=2)
 
     # def forward(self, observation: torch.Tensor) -> torch.Tensor:
     #     if len(observation.size()) == 1:

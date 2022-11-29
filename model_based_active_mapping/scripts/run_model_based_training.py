@@ -58,10 +58,10 @@ def run_model_based_training(params_filename):
     num_test_trials = params['num_test_trials']
 
     if args.network_type == 1:
+        env = SimpleEnvAtt(max_num_landmarks=max_num_landmarks, horizon=horizon, tau=tau,
+                           A=A, B=B, V=V, W=W, landmark_motion_scale=landmark_motion_scale, psi=psi, radius=radius)
         agent = ModelBasedAgentAtt(max_num_landmarks=max_num_landmarks, init_info=init_info, A=A, B=B, W=W,
                             radius=radius, psi=psi, kappa=kappa, V=V, lr=lr)
-        env = SimpleEnvAtt(num_landmarks=num_landmarks, horizon=horizon, tau=tau,
-                        A=A, B=B, V=V, W=W, landmark_motion_scale=landmark_motion_scale, psi=psi, radius=radius)
     else:
         env = SimpleEnv(num_landmarks=num_landmarks, horizon=horizon, width=env_width, height=env_height, tau=tau,
                         A=A, B=B, V=V, W=W, landmark_motion_scale=landmark_motion_scale, psi=psi, radius=radius)
@@ -78,6 +78,7 @@ def run_model_based_training(params_filename):
 
         for j in range(batch_size):
             mu_real, v, x, done = env.reset()
+            num_landmarks = mu_real.size()[0]
             agent.reset_estimate_mu(mu_real)
             agent.reset_agent_info()
             step = 0
