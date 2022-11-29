@@ -167,7 +167,6 @@ class SimpleEnv:
 class SimpleEnvAtt:
     def __init__(self, max_num_landmarks, horizon, tau, A, B, V, W, landmark_motion_scale, psi, radius):
         self._max_num_landmarks = max_num_landmarks
-        self._horizon = horizon
 
         self._tau = tau
         self._A = A
@@ -187,14 +186,16 @@ class SimpleEnvAtt:
 
     def reset(self):
         self._num_landmarks = torch.randint(3, 8, (1, )).item()
-        self._env_size = tensor([self._num_landmarks * 2, self._num_landmarks * 2])
+        self._env_size = tensor([self._num_landmarks * 4, self._num_landmarks * 4])
+        self._horizon = self._num_landmarks * 3
         mu = (torch.rand((self._num_landmarks, 2)) - 0.5) * self._env_size
 
-        landmark_motion_bias = (torch.rand(2) - 0.5) * 2
-        v = (torch.rand((self._num_landmarks, 2)) + landmark_motion_bias - 0.5) * self._landmark_motion_scale
+        landmark_motion_bias = (torch.rand(2) - 0.5) * 1.6
+        v = (torch.rand((self._num_landmarks, 2)) - 0.5) * self._landmark_motion_scale + \
+                  self._landmark_motion_bias
 
         x = torch.empty(3)
-        x[:2] = (torch.rand(2) - 0.5) * self._env_size
+        x[:2] = (torch.rand(2) - 0.5) * self._env_size * 1.25
         x[2] = (torch.rand(1) * 2 - 1) * torch.pi
 
         self._mu_real = mu
@@ -213,11 +214,12 @@ class SimpleEnvAtt:
         self._x = SE2_kinematics(self._x, action, self._tau)
         # self._x[:2] = torch.clip(self._x[:2], min=torch.zeros(2), max=self._env_size)
 
-        self._mu_real = torch.clip(landmark_motion_real(self._mu_real, self._v, self._A, self._B, self._W),
-                                   min=-self._env_size/2, max=self._env_size/2)
+        # self._mu_real = torch.clip(landmark_motion_real(self._mu_real, self._v, self._A, self._B, self._W),
+        #                            min=-self._env_size/2, max=self._env_size/2)
+        self._mu_real = landmark_motion_real(self._mu_real, self._v, self._A, self._B, self._W)
 
-        self._v = (torch.rand((self._num_landmarks, 2)) + self._landmark_motion_bias - 0.5) *\
-                  self._landmark_motion_scale
+        self._v = (torch.rand((self._num_landmarks, 2)) - 0.5) * self._landmark_motion_scale + \
+                  self._landmark_motion_bias
 
         done = False
         self._step_num += 1
@@ -270,7 +272,7 @@ class SimpleEnvAtt:
 
         # display
         plt.draw()
-        plt.pause(0.2)
+        plt.pause(0.3)
 
     def save_plot(self, name='default.png', title='trajectory', legend=False):
         self.ax.cla()

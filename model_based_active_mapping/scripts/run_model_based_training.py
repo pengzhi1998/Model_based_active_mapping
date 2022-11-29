@@ -146,4 +146,4 @@ if __name__ == '__main__':
     # torch.manual_seed(0)
     # torch.autograd.set_detect_anomaly(True)
     run_model_based_training(params_filename=os.path.join(os.path.abspath(os.path.join("", os.pardir)),
-                                                          "params/params.yaml"))
+                                                          "params/params_compare.yaml"))

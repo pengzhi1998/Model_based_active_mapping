@@ -201,9 +201,10 @@ class ModelBasedAgentAtt:
         self._policy.train()
 
     def plan(self, v, x):
-        self._mu_predict = torch.clip(landmark_motion(self._mu_update, v, self._A, self._B),
-                                      min=-tensor([self._num_landmarks, self._num_landmarks]),
-                                      max=tensor([self._num_landmarks, self._num_landmarks]))
+        # self._mu_predict = torch.clip(landmark_motion(self._mu_update, v, self._A, self._B),
+        #                               min=-tensor([self._num_landmarks, self._num_landmarks]),
+        #                               max=tensor([self._num_landmarks, self._num_landmarks]))
+        self._mu_predict = landmark_motion(self._mu_update, v, self._A, self._B)
         self._info = (self._info**(-1) + self._W)**(-1)
 
         q_predict = torch.vstack(((self._mu_predict[:, 0] - x[0]) * torch.cos(x[2]) + (self._mu_predict[:, 1] - x[1]) * torch.sin(x[2]),

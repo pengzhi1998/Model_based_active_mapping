@@ -89,6 +89,6 @@ class PolicyNetAtt(nn.Module):
         if action.size()[0] == 1:
             action = action.flatten()
 
-        scaled_action = torch.hstack(((1 + action[0]) / 2 * 1.0, action[1] * 0.1))
+        scaled_action = torch.hstack(((1 + action[0]) * 2.0, action[1] * torch.pi/3))
 
         return scaled_action
