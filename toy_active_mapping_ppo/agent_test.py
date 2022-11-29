@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 from stable_baselines3 import PPO
-from toy_active_mapping_ppo.env import SimpleQuadrotor
+from env import SimpleQuadrotor
 
 ACTION = np.array([[4, 3, 0], [0, -2, 0],
     [-4, -5, 0], [-2, -1, 0], [-1, 4, 0], [0, 4, 0]])/5

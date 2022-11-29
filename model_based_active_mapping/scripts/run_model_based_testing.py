@@ -1,10 +1,12 @@
-import os, yaml
+import os, sys, yaml
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import torch
+torch.manual_seed(0)
 import argparse
 
 from torch import tensor
-from model_based_active_mapping.envs.simple_env import SimpleEnv, SimpleEnvAtt
-from model_based_active_mapping.agents.model_based_agent import ModelBasedAgent, ModelBasedAgentAtt
+from envs.simple_env import SimpleEnv, SimpleEnvAtt
+from agents.model_based_agent import ModelBasedAgent, ModelBasedAgentAtt
 
 parser = argparse.ArgumentParser(description='model-based mapping')
 parser.add_argument('--network-type', type=int, default=1, help='by default, it should attention block,'

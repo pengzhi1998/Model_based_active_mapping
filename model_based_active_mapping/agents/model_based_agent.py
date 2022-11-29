@@ -2,9 +2,9 @@ import torch
 
 from torch import tensor
 from torch.optim import SGD, Adam
-from model_based_active_mapping.models.policy_net import PolicyNet
-from model_based_active_mapping.models.policy_net_att import PolicyNetAtt
-from model_based_active_mapping.utilities.utils import landmark_motion, triangle_SDF, get_transformation, phi
+from models.policy_net import PolicyNet
+from models.policy_net_att import PolicyNetAtt
+from utilities.utils import landmark_motion, triangle_SDF, get_transformation, phi
 
 
 class ModelBasedAgent:

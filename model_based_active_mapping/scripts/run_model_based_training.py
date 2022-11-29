@@ -1,4 +1,5 @@
-import os, yaml
+import os, sys, yaml
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import argparse
 import torch
 import numpy as np
@@ -7,8 +8,8 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 from torch import tensor
-from model_based_active_mapping.envs.simple_env import SimpleEnv, SimpleEnvAtt
-from model_based_active_mapping.agents.model_based_agent import ModelBasedAgent, ModelBasedAgentAtt
+from envs.simple_env import SimpleEnv, SimpleEnvAtt
+from agents.model_based_agent import ModelBasedAgent, ModelBasedAgentAtt
 from torch.utils.tensorboard import SummaryWriter
 
 parser = argparse.ArgumentParser(description='model-based mapping')

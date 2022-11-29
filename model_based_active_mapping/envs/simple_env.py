@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 from typing import Tuple
 from torch import tensor
-from model_based_active_mapping.utilities.utils import SE2_kinematics, landmark_motion_real
+from utilities.utils import SE2_kinematics, landmark_motion_real
 
 
 class SimpleEnv:
