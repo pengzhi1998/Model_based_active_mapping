@@ -191,8 +191,7 @@ class SimpleEnvAtt:
         mu = (torch.rand((self._num_landmarks, 2)) - 0.5) * self._env_size
 
         landmark_motion_bias = (torch.rand(2) - 0.5) * 1.6
-        v = (torch.rand((self._num_landmarks, 2)) - 0.5) * self._landmark_motion_scale + \
-                  self._landmark_motion_bias
+        v = (torch.rand((self._num_landmarks, 2)) - 0.5) * self._landmark_motion_scale + landmark_motion_bias
 
         x = torch.empty(3)
         x[:2] = (torch.rand(2) - 0.5) * self._env_size * 1.25
