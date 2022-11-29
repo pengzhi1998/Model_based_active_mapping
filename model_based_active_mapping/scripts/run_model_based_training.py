@@ -14,7 +14,10 @@ from torch.utils.tensorboard import SummaryWriter
 parser = argparse.ArgumentParser(description='model-based mapping')
 parser.add_argument('--network-type', type=int, default=1, help='by default, it should attention block,'
                                                                 'otherwise, it would be MLP')
+parser.add_argument('--seed', type=int, default=0)
 args = parser.parse_args()
+
+torch.manual_seed(args.seed)
 
 def run_model_based_training(params_filename):
     assert os.path.exists(params_filename)
@@ -100,7 +103,7 @@ def run_model_based_training(params_filename):
         print('Normalized average reward at epoch {}: {}'.format(i, mean_reward))
         print('Normalized median reward at epoch {}: {}'.format(i, np.median(reward_list[i])))
         if mean_reward > best_reward:
-            torch.save(agent.get_policy_state_dict(), './checkpoints/best_model.pth')
+            torch.save(agent.get_policy_state_dict(), './checkpoints/best_model_seed{}.pth'.format(args.seed))
             best_reward = mean_reward
             print("New best model!\n")
 

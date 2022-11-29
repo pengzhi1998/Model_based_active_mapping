@@ -1,5 +1,4 @@
 import torch
-torch.manual_seed(0)
 import cv2
 import numpy as np
 import matplotlib
