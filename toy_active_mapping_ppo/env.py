@@ -155,7 +155,7 @@ class SimpleQuadrotor(gym.Env):
         if self.for_comparison == False:
             info = {'info_mat': next_info_mat}
         else:
-            info = np.mean(np.abs(self.landmarks.flatten() - self.landmarks_estimate))
+            info = slogdet(self.info_mat_update)[1]/self.num_landmarks
 
         # update variables
         self.agent_pos = next_agent_pos
@@ -210,6 +210,14 @@ class SimpleQuadrotor(gym.Env):
         else:
             self.landmarks = np.array(init_agent_landmarks[0])
             self.agent_pos = np.array(init_agent_landmarks[1])
+            self.num_landmarks = int(np.shape(self.landmarks)[0] / 2)
+            self.U = np.array(init_agent_landmarks[2])
+            self.total_step = self.num_landmarks * 3
+            self.padding = np.array([0.] * 2 * (self.max_num_landmarks - self.num_landmarks))
+            self.mask = np.array([True] * self.num_landmarks + [False] * (self.max_num_landmarks - self.num_landmarks))
+            self.info_mat_init = np.diag([.5] * self.num_landmarks * 2).astype(np.float32)
+            self.info_mat = self.info_mat_init.copy()
+            self.info_mat_update = self.info_mat
 
         # if self.special_case == True:
         #     self.random_serial = 2

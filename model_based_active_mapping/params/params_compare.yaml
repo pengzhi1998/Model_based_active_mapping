@@ -30,4 +30,4 @@ FoV:
 lr: 0.0003
 max_epoch: 1000
 batch_size: 60
-num_test_trials: 20
+num_test_trials: 10

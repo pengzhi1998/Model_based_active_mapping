@@ -12,7 +12,8 @@ from utilities.utils import SE2_kinematics, landmark_motion_real
 
 class SimpleEnv:
 
-    def __init__(self, num_landmarks, horizon, width, height, tau, A, B, V, W, landmark_motion_scale, psi, radius):
+    def __init__(self, num_landmarks, horizon, width, height, tau, A, B, V, W,
+                 landmark_motion_scale, psi, radius):
         self._num_landmarks = num_landmarks
         self._horizon = horizon
         self._env_size = tensor([self._num_landmarks*2, self._num_landmarks*2])
@@ -165,7 +166,8 @@ class SimpleEnv:
 
 
 class SimpleEnvAtt:
-    def __init__(self, max_num_landmarks, horizon, tau, A, B, V, W, landmark_motion_scale, psi, radius):
+    def __init__(self, max_num_landmarks, horizon, tau, A, B, V, W, landmark_motion_scale, psi, radius,
+                 for_comparison=False):
         self._max_num_landmarks = max_num_landmarks
 
         self._tau = tau
@@ -174,6 +176,7 @@ class SimpleEnvAtt:
         self._V = V  # sensor_std ** 2 with the shape of (2, )
         self._W = W  # motion_std ** 2 with the shape of (2, )
         self._landmark_motion_scale = landmark_motion_scale
+        self.for_comparison = for_comparison
 
         self._mu = None
         self._v = None
@@ -184,19 +187,25 @@ class SimpleEnvAtt:
         self._psi = psi
         self._radius = radius
 
-    def reset(self):
-        self._num_landmarks = torch.randint(3, 8, (1, )).item()
-        self._env_size = tensor([self._num_landmarks * 4, self._num_landmarks * 4])
+    def reset(self, init_agent_landmarks=None):
+        if self.for_comparison == False:
+            self._num_landmarks = torch.randint(3, 8, (1, )).item()
+            self._env_size = tensor([self._num_landmarks * 4, self._num_landmarks * 4])
+            mu = (torch.rand((self._num_landmarks, 2)) - 0.5) * self._env_size
+
+            landmark_motion_bias = (torch.rand(2) - 0.5) * 1.6
+
+            x = torch.empty(3)
+            x[:2] = (torch.rand(2) - 0.5) * self._env_size * 1.25
+            x[2] = (torch.rand(1) * 2 - 1) * torch.pi
+        else:
+            self._num_landmarks = int(torch.tensor(init_agent_landmarks[0]).size()[0]/2)
+            mu = torch.tensor(init_agent_landmarks[0]).reshape(self._num_landmarks, 2)
+            x = torch.tensor(init_agent_landmarks[1])
+            landmark_motion_bias = torch.tensor(init_agent_landmarks[2]).reshape(self._num_landmarks, 2)
+
         self._horizon = self._num_landmarks * 3
-        mu = (torch.rand((self._num_landmarks, 2)) - 0.5) * self._env_size
-
-        landmark_motion_bias = (torch.rand(2) - 0.5) * 1.6
         v = (torch.rand((self._num_landmarks, 2)) - 0.5) * self._landmark_motion_scale + landmark_motion_bias
-
-        x = torch.empty(3)
-        x[:2] = (torch.rand(2) - 0.5) * self._env_size * 1.25
-        x[2] = (torch.rand(1) * 2 - 1) * torch.pi
-
         self._mu_real = mu
         self._v = v
         self._landmark_motion_bias = landmark_motion_bias
