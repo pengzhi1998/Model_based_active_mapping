@@ -167,7 +167,7 @@ class SimpleEnv:
 
 class SimpleEnvAtt:
     def __init__(self, max_num_landmarks, horizon, tau, A, B, V, W, landmark_motion_scale, psi, radius,
-                 for_comparison=False):
+                 for_comparison=False, visualcomp=False):
         self._max_num_landmarks = max_num_landmarks
 
         self._tau = tau
@@ -177,6 +177,7 @@ class SimpleEnvAtt:
         self._W = W  # motion_std ** 2 with the shape of (2, )
         self._landmark_motion_scale = landmark_motion_scale
         self.for_comparison = for_comparison
+        self.visualcomp = visualcomp
 
         self._mu = None
         self._v = None
@@ -188,29 +189,44 @@ class SimpleEnvAtt:
         self._radius = radius
 
     def reset(self, init_agent_landmarks=None):
-        if self.for_comparison == False:
-            self._num_landmarks = torch.randint(3, 8, (1, )).item()
-            self._env_size = tensor([self._num_landmarks * 4, self._num_landmarks * 4])
-            mu = (torch.rand((self._num_landmarks, 2)) - 0.5) * self._env_size
+        if self.visualcomp == False:
+            if self.for_comparison == False:
+                self._num_landmarks = torch.randint(3, 8, (1, )).item()
+                self._env_size = tensor([self._num_landmarks * 4, self._num_landmarks * 4])
+                mu = (torch.rand((self._num_landmarks, 2)) - 0.5) * self._env_size
 
-            landmark_motion_bias = (torch.rand(2) - 0.5) * 1.6
+                landmark_motion_bias = (torch.rand(2) - 0.5) * 1.6
 
-            x = torch.empty(3)
-            x[:2] = (torch.rand(2) - 0.5) * self._env_size * 1.25
-            x[2] = (torch.rand(1) * 2 - 1) * torch.pi
+                x = torch.empty(3)
+                x[:2] = (torch.rand(2) - 0.5) * self._env_size * 1.25
+                x[2] = (torch.rand(1) * 2 - 1) * torch.pi
+            else:
+                self._num_landmarks = int(torch.tensor(init_agent_landmarks[0]).size()[0]/2)
+                mu = torch.tensor(init_agent_landmarks[0]).reshape(self._num_landmarks, 2)
+                x = torch.tensor(init_agent_landmarks[1])
+                landmark_motion_bias = torch.tensor(init_agent_landmarks[2]).reshape(self._num_landmarks, 2)
+
+            self._horizon = self._num_landmarks * 3
+            v = (torch.rand((self._num_landmarks, 2)) - 0.5) * self._landmark_motion_scale + landmark_motion_bias
+            self._mu_real = mu
+            self._v = v
+            self._landmark_motion_bias = landmark_motion_bias
+            self._x = x
+            self._step_num = 0
+
         else:
-            self._num_landmarks = int(torch.tensor(init_agent_landmarks[0]).size()[0]/2)
+            self._num_landmarks = int(torch.tensor(init_agent_landmarks[0]).size()[0] / 2)
             mu = torch.tensor(init_agent_landmarks[0]).reshape(self._num_landmarks, 2)
             x = torch.tensor(init_agent_landmarks[1])
             landmark_motion_bias = torch.tensor(init_agent_landmarks[2]).reshape(self._num_landmarks, 2)
+            v = torch.tensor(init_agent_landmarks[3][0]).reshape(self._num_landmarks, 2) + landmark_motion_bias
 
-        self._horizon = self._num_landmarks * 3
-        v = (torch.rand((self._num_landmarks, 2)) - 0.5) * self._landmark_motion_scale + landmark_motion_bias
-        self._mu_real = mu
-        self._v = v
-        self._landmark_motion_bias = landmark_motion_bias
-        self._x = x
-        self._step_num = 0
+            self._horizon = self._num_landmarks * 3
+            self._mu_real = mu
+            self._v = v
+            self._landmark_motion_bias = landmark_motion_bias
+            self._x = x
+            self._step_num = 0
 
         self.history_poses = [self._x.detach().numpy().tolist()]
         self.fig = plt.figure(1)
@@ -218,16 +234,20 @@ class SimpleEnvAtt:
 
         return self._mu_real, v, x, False
 
-    def step(self, action: tensor) -> Tuple[tensor, tensor, tensor, bool]:
+    def step(self, action: tensor, init_agent_landmarks_moving_visual=None) -> Tuple[tensor, tensor, tensor, bool]:
         self._x = SE2_kinematics(self._x, action, self._tau)
         # self._x[:2] = torch.clip(self._x[:2], min=torch.zeros(2), max=self._env_size)
 
         # self._mu_real = torch.clip(landmark_motion_real(self._mu_real, self._v, self._A, self._B, self._W),
         #                            min=-self._env_size/2, max=self._env_size/2)
         self._mu_real = landmark_motion_real(self._mu_real, self._v, self._A, self._B, self._W)
+        if self.visualcomp == False:
+            self._v = (torch.rand((self._num_landmarks, 2)) - 0.5) * self._landmark_motion_scale + \
+                      self._landmark_motion_bias
+        else:
+            v = torch.tensor(init_agent_landmarks_moving_visual[3][self._step_num]).reshape(self._num_landmarks, 2)
 
-        self._v = (torch.rand((self._num_landmarks, 2)) - 0.5) * self._landmark_motion_scale + \
-                  self._landmark_motion_bias
+
 
         done = False
         self._step_num += 1
@@ -235,6 +255,9 @@ class SimpleEnvAtt:
             done = True
 
         self.history_poses.append(self._x.detach().numpy().tolist())
+
+        if done==True:
+            print(self.history_poses)
 
         return self._mu_real, self._v, self._x, done
 
