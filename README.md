@@ -20,15 +20,28 @@ If you are using the code for research work, please cite:
 [//]: # (The yaml files are borrowed from this great repo: https://github.com/ehfd/docker-nvidia-glx-desktop.git and)
 
 [//]: # (https://ucsd-prp.gitlab.io/userdocs/running/gui-desktop/)
-## Installation
 
+## Intro
+This paper proposes a novel model-based policy gradient algorithm for tracking dynamic targets
+using a mobile robot, equipped with an onboard sensor with limited field of view. The task is to
+obtain a continuous control policy for the mobile robot to collect sensor measurements that reduce
+uncertainty in the target states, measured by the target distribution entropy. We design a neural
+network control policy with the robot SE(3) pose and the mean vector and information matrix
+of the joint target distribution as inputs and attention layers to handle variable numbers of targets.
+We also derive the gradient of the target entropy with respect to the network parameters explicitly,
+allowing efficient model-based policy gradient optimization.
+
+## Installation
+Clone the repository and ```cd``` into it,
 ```
 conda create -n landmark_mapping python==3.8 -y
 conda activate landmark_mapping
 pip install -r requirements.txt
-cd ./
-git clone --branch release_18 https://github.com/Unity-Technologies/ml-agents.git
-cd ./ml-agents
-pip install -e ./ml-agents-envs
-pip install gym-unity==0.27.0
+```
+
+## Run and test
+```cd``` into the ```model_based_active_mapping``` directory and:
+```
+python run_model_based_training.py
+python run_model_based_test.py
 ```
