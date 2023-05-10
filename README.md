@@ -47,6 +47,8 @@ python run_model_based_test.py
 ```
 
 ## Experimental Results
-![gif](https://github.com/pengzhi1998/Model_based_active_mapping/blob/main/3landmarks.gif)
-![gif](https://github.com/pengzhi1998/Model_based_active_mapping/blob/main/5landmarks.gif)
-![gif](https://github.com/pengzhi1998/Model_based_active_mapping/blob/main/7landmarks.gif)
+<div style="display:flex;">
+  <img src="https://github.com/pengzhi1998/Model_based_active_mapping/blob/main/3landmarks.gif" width="33%">
+  <img src="https://github.com/pengzhi1998/Model_based_active_mapping/blob/main/5landmarks.gif" width="33%">
+  <img src="https://github.com/pengzhi1998/Model_based_active_mapping/blob/main/7landmarks.gif" width="33%">
+</div>
