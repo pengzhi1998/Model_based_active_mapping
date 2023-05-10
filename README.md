@@ -45,3 +45,8 @@ pip install -r requirements.txt
 python run_model_based_training.py
 python run_model_based_test.py
 ```
+
+## Experimental Results
+![gif](https://github.com/pengzhi1998/Model_based_active_mapping/blob/master/3landmarks.gif)
+![gif](https://github.com/pengzhi1998/Model_based_active_mapping/blob/master/5landmarks.gif)
+![gif](https://github.com/pengzhi1998/Model_based_active_mapping/blob/master/7landmarks.gif)
