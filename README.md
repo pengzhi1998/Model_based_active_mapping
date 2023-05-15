@@ -1,4 +1,5 @@
 # Landmark-based mapping
+Please check our [code](https://github.com/ExistentialRobotics/RL_Active_Multi_Target_Tracking.git) in Existential Robotics Laboratory (ERL) GitHub Organization.
 This repository is a PyTorch implementation for paper ***[Policy Learning for Active Target Tracking over Continuous SE(3)
 Trajectories](https://arxiv.org/pdf/2212.01498.pdf)***
 in L4DC 2023. Authors: [Pengzhi Yang](https://pengzhi1998.github.io/), [Shumon Koga](https://shumon0423.github.io/), [Arash Asgharivaskasi](https://arashasgharivaskasi-bc.github.io/), 
